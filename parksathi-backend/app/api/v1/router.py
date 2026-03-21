@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends
 from .endpoints.health import health_handler
 from .endpoints.user import process_reservation
-from auth.firebase import verify_firebase_token
+from app.auth.firebase import verify_firebase_token
 
 router = APIRouter()
 

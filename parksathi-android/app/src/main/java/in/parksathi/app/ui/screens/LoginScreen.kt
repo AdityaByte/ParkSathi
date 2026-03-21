@@ -3,11 +3,15 @@ package `in`.parksathi.app.ui.screens
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -28,10 +32,6 @@ import kotlinx.coroutines.tasks.await
 @Composable
 fun LoginScreen(navController: NavController, context: Context) {
     val sharedPreferences = context.getSharedPreferences("parksathi_prefs", Context.MODE_PRIVATE)
-
-    // The web client id is crucial for identifying google that the google sign in
-    // request is coming from a trusted source as when we set the app in the firebase console
-    // we get a web client id which is used for unique identification.
     val firebaseWebClientId = BuildConfig.FIREBASE_WEB_CLIENT_ID
 
     val scope = rememberCoroutineScope()
@@ -39,85 +39,159 @@ fun LoginScreen(navController: NavController, context: Context) {
     val credentialManager = CredentialManager.create(localContext)
     var isLoading by remember { mutableStateOf(false) }
 
-    Column(
+    Surface(
         modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        color = MaterialTheme.colorScheme.background
     ) {
-        Text(
-            text = "Welcome to ParkSathi",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        if (isLoading) {
-            CircularProgressIndicator()
-        } else {
-            Button(
-                onClick = {
-                    if (firebaseWebClientId.isEmpty()) {
-                        Toast.makeText(localContext, "Web Client ID is missing", Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
-                    scope.launch {
-                        isLoading = true
-                        val success = signInWithGoogle(localContext, credentialManager, firebaseWebClientId)
-                        if (success) {
-                            sharedPreferences.edit().putBoolean("isLoggedIn", true).apply()
-                            navController.navigate(Screen.Dashboard.route) {
-                                popUpTo(Screen.Login.route) { inclusive = true }
-                            }
-                        } else {
-                            Toast.makeText(localContext, "Login failed", Toast.LENGTH_SHORT).show()
-                        }
-                        isLoading = false
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp)
-            ) {
-                Text(text = "Login with Google")
-            }
-        }
-        
-        if (firebaseWebClientId.isEmpty()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
             Text(
-                text = "Warning: Firebase Client ID not found in local.properties",
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(top = 8.dp)
+                text = "Welcome to ParkSathi",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
             )
+            
+            Text(
+                text = "Sign in to continue",
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                modifier = Modifier.padding(top = 8.dp, bottom = 48.dp)
+            )
+
+            if (isLoading) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            } else {
+                // Google signin button.
+                OutlinedButton(
+                    onClick = {
+                        if (firebaseWebClientId.isEmpty()) {
+                            Toast.makeText(localContext, "Web Client ID missing", Toast.LENGTH_SHORT).show()
+                            return@OutlinedButton
+                        }
+                        scope.launch {
+                            isLoading = true
+                            val success = signInWithGoogle(localContext, credentialManager, firebaseWebClientId)
+                            if (success) {
+                                sharedPreferences.edit().putBoolean("isLoggedIn", true).apply()
+                                navController.navigate(Screen.Dashboard.route) {
+                                    popUpTo(Screen.Login.route) { inclusive = true }
+                                }
+                            } else {
+                                Toast.makeText(localContext, "Google Login failed", Toast.LENGTH_SHORT).show()
+                            }
+                            isLoading = false
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        // Google logo - as we are using typography right now later on add a drawable for that.
+                        Text(
+                            text = "G",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF4285F4),
+                            modifier = Modifier.padding(end = 12.dp)
+                        )
+                        Text(
+                            text = "Sign in with Google",
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // microsoft btn.
+                OutlinedButton(
+                    onClick = {
+                        Toast.makeText(localContext, "Microsoft Sign-In coming soon", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        // microsoft logo.
+                        Column(modifier = Modifier.padding(end = 12.dp)) {
+                            Row {
+                                Box(modifier = Modifier.size(8.dp).background(Color(0xFFF25022)))
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Box(modifier = Modifier.size(8.dp).background(Color(0xFF7FBA00)))
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Row {
+                                Box(modifier = Modifier.size(8.dp).background(Color(0xFF00A4EF)))
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Box(modifier = Modifier.size(8.dp).background(Color(0xFFFFB900)))
+                            }
+                        }
+                        Text(
+                            text = "Sign in with Microsoft",
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+            
+            if (firebaseWebClientId.isEmpty()) {
+                Text(
+                    text = "Warning: Firebase Client ID not found in local.properties",
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
+            }
         }
     }
 }
 
-private suspend fun signInWithGoogle(context: Context, credentialManager: CredentialManager, webClientId: String): Boolean {
-
-    // Making a configuration request to the Google oauth server.
+private suspend fun signInWithGoogle(
+    context: Context,
+    credentialManager: CredentialManager,
+    webClientId: String
+): Boolean {
     val googleIdOption = GetGoogleIdOption.Builder()
         .setFilterByAuthorizedAccounts(false)
         .setServerClientId(webClientId)
         .build()
 
-    // Requesting for the credential manager as of we will see the account window.
     val request = GetCredentialRequest.Builder()
         .addCredentialOption(googleIdOption)
         .build()
 
     return try {
-        // When we click on the account and logs in we will get a Google token.
         val result = credentialManager.getCredential(context, request)
         val credential = result.credential
         
         if (credential is GoogleIdTokenCredential) {
-            // Converting the Google token into firebase format.
             val firebaseCredential = GoogleAuthProvider.getCredential(credential.idToken, null)
-            // Here we are doing like making a request to firebase auth and telling the Google to let the user in.
-            // If it returns the user then we are logged in.
             val authResult = FirebaseAuth.getInstance().signInWithCredential(firebaseCredential).await()
             authResult.user != null
         } else {
