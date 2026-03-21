@@ -2,10 +2,26 @@ package `in`.parksathi.partner.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// Primary Colors - Professional Navy & Blue
+val PrimaryLight = Color(0xFF0D47A1) // Deep Blue for Light Mode
+val PrimaryDark = Color(0xFFBBDEFB)  // Soft Blue for Dark Mode
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// Secondary Colors - Slate/Teal
+val SecondaryLight = Color(0xFF37474F)
+val SecondaryDark = Color(0xFFCFD8DC)
+
+// Backgrounds
+val BackgroundLight = Color(0xFFF8F9FA)
+val BackgroundDark = Color(0xFF0B1218) // Very Dark Navy-Black
+
+// Surface Colors
+val SurfaceLight = Color(0xFFFFFFFF)
+val SurfaceDark = Color(0xFF151D24)
+
+// On-Surface (Text)
+val OnSurfaceLight = Color(0xFF1C1B1F)
+val OnSurfaceDark = Color(0xFFE1E2E5)
+
+val AccentBlue = Color(0xFF2196F3)
+val ErrorRed = Color(0xFFB00020)
+val SuccessGreen = Color(0xFF4CAF50)
