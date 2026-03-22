@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import `in`.parksathi.partner.ui.screens.DashboardScreen
 import `in`.parksathi.partner.ui.screens.LoginScreen
+import `in`.parksathi.partner.ui.screens.ParkingDetailsScreen
 import `in`.parksathi.partner.ui.screens.SplashScreen
 
 @Composable
@@ -24,6 +25,10 @@ fun AppNavigation(context: Context) {
 
         composable(Screen.Login.route) {
             LoginScreen(navController, context)
+        }
+
+        composable(Screen.ParkingDetails.route) {
+            ParkingDetailsScreen(navController)
         }
 
         composable(Screen.Dashboard.route) {

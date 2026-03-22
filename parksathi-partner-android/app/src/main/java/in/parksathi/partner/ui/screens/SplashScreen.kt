@@ -17,7 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import `in`.parksathi.app.ui.navigation.Screen
+import `in`.parksathi.partner.ui.navigation.Screen
 import kotlinx.coroutines.delay
 
 @Composable
@@ -49,7 +49,7 @@ fun SplashScreen(navController: NavController, context: Context) {
         delay(2000)
         
         if (isLoggedIn) {
-            navController.navigate(Screen.Dashboard.route) {
+            navController.navigate(Screen.ParkingDetails.route) {
                 popUpTo(Screen.Splash.route) { inclusive = true }
             }
         } else {
@@ -96,7 +96,7 @@ fun SplashScreen(navController: NavController, context: Context) {
                             expandHorizontally(animationSpec = tween(1000), expandFrom = Alignment.Start)
                 ) {
                     Text(
-                        text = "arkSathi Partner",
+                        text = "arkPartner",
                         fontSize = 44.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,

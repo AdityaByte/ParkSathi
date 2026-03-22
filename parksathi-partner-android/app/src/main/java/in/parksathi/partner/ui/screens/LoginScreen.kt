@@ -51,8 +51,8 @@ fun LoginScreen(navController: NavController, context: Context) {
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "Welcome to ParkSathi",
-                fontSize = 28.sp,
+                text = "Welcome to ParkPartner",
+                fontSize = 25.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -79,7 +79,7 @@ fun LoginScreen(navController: NavController, context: Context) {
                             val success = signInWithGoogle(localContext, credentialManager, firebaseWebClientId)
                             if (success) {
                                 sharedPreferences.edit().putBoolean("isLoggedIn", true).apply()
-                                navController.navigate(Screen.Dashboard.route) {
+                                navController.navigate(Screen.ParkingDetails.route) {
                                     popUpTo(Screen.Login.route) { inclusive = true }
                                 }
                             } else {
