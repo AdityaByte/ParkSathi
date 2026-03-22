@@ -20,3 +20,4 @@ dist/
 .DS_Store
 Thumbs.db
 service_account_key.json
+uploads/

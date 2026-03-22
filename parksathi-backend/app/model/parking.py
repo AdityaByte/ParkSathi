@@ -8,7 +8,7 @@ from app.model.user import User
 
 class VerificationStatus(str, Enum):
     PENDING = "pending"
-    APPROVED = "apporved"
+    APPROVED = "approved"
     REJECTED = "rejected"
 
 class Coordinates(BaseModel):
@@ -18,6 +18,7 @@ class Coordinates(BaseModel):
 class ParkingDetails(Document):
     # The details were associated with which user.
     user: Link[User]
+    uid: str
     parking_name: str
     address: str
     phone_number: str
@@ -25,6 +26,7 @@ class ParkingDetails(Document):
     coordinates: Coordinates
     verification_file_url: str # file url.
     verification_status: VerificationStatus = VerificationStatus.PENDING
+    slots: int
 
     class Settings:
         name = "parking_details"

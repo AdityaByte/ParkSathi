@@ -1,5 +1,6 @@
 package `in`.parksathi.partner.config
 
+import `in`.parksathi.partner.BuildConfig
 import `in`.parksathi.partner.api.ApiService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -8,8 +9,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
-    // Use 10.0.2.2 for Localhost from Emulator. Change to your production URL later.
-    private const val BASE_URL = "http://10.0.2.2:5000/api/v1/"
+    private const val BASE_URL = BuildConfig.BACKEND_ORIGIN
 
     private val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY

@@ -25,6 +25,8 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import `in`.parksathi.partner.BuildConfig
+import `in`.parksathi.partner.config.RetrofitClient
+import `in`.parksathi.partner.enum.VerificationStatus
 import `in`.parksathi.partner.ui.navigation.Screen
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -67,7 +69,6 @@ fun LoginScreen(navController: NavController, context: Context) {
             if (isLoading) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             } else {
-                // Google signin button.
                 OutlinedButton(
                     onClick = {
                         if (firebaseWebClientId.isEmpty()) {
@@ -76,11 +77,64 @@ fun LoginScreen(navController: NavController, context: Context) {
                         }
                         scope.launch {
                             isLoading = true
+                            // sign-in with google.
                             val success = signInWithGoogle(localContext, credentialManager, firebaseWebClientId)
+
                             if (success) {
-                                sharedPreferences.edit().putBoolean("isLoggedIn", true).apply()
-                                navController.navigate(Screen.ParkingDetails.route) {
-                                    popUpTo(Screen.Login.route) { inclusive = true }
+                                val user = FirebaseAuth.getInstance().currentUser
+                                val token = user?.getIdToken(true)?.await()?.token
+                                
+                                if (token != null) {
+                                    try {
+                                        // 1. Create/Update user on backend
+                                        val createResponse = RetrofitClient.instance.createUser("Bearer $token")
+                                        if (createResponse.isSuccessful) {
+                                            sharedPreferences.edit().putBoolean("isLoggedIn", true).apply()
+                                            
+                                            // 2. Verify role and check parking registration status
+                                            val verifyResponse = RetrofitClient.instance.verifyRole("Bearer $token")
+                                            if (verifyResponse.isSuccessful) {
+                                                val roleData = verifyResponse.body()
+                                                
+                                                if (roleData?.verificationStatus != null) {
+                                                    sharedPreferences.edit().putBoolean("isParkingFormSubmitted", true).apply()
+                                                    
+                                                    if (roleData.verificationStatus == VerificationStatus.PENDING) {
+                                                        navController.navigate(Screen.PendingVerification.route) {
+                                                            popUpTo(Screen.Login.route) { inclusive = true }
+                                                        }
+                                                    } else {
+                                                        // Approved or others -> Dashboard
+                                                        navController.navigate(Screen.Dashboard.route) {
+                                                            popUpTo(Screen.Login.route) { inclusive = true }
+                                                        }
+                                                    }
+                                                } else {
+                                                    // No registration status found
+                                                    sharedPreferences.edit().putBoolean("isParkingFormSubmitted", false).apply()
+                                                    navController.navigate(Screen.ParkingDetails.route) {
+                                                        popUpTo(Screen.Login.route) { inclusive = true }
+                                                    }
+                                                }
+                                            } else if (verifyResponse.code() == 404) {
+                                                // Backend returns 404 if no parking details exist for user
+                                                sharedPreferences.edit().putBoolean("isParkingFormSubmitted", false).apply()
+                                                navController.navigate(Screen.ParkingDetails.route) {
+                                                    popUpTo(Screen.Login.route) { inclusive = true }
+                                                }
+                                            } else {
+                                                // Fallback for other errors
+                                                navController.navigate(Screen.ParkingDetails.route) {
+                                                    popUpTo(Screen.Login.route) { inclusive = true }
+                                                }
+                                            }
+                                        } else {
+                                            Toast.makeText(localContext, "User creation failed on backend", Toast.LENGTH_SHORT).show()
+                                        }
+                                    } catch (e: Exception) {
+                                        Log.e("LoginScreen", "API Error: ${e.message}")
+                                        Toast.makeText(localContext, "Backend Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    }
                                 }
                             } else {
                                 Toast.makeText(localContext, "Google Login failed", Toast.LENGTH_SHORT).show()
@@ -101,7 +155,6 @@ fun LoginScreen(navController: NavController, context: Context) {
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        // Google logo - as we are using typography right now later on add a drawable for that.
                         Text(
                             text = "G",
                             fontSize = 20.sp,
@@ -119,7 +172,6 @@ fun LoginScreen(navController: NavController, context: Context) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // microsoft btn.
                 OutlinedButton(
                     onClick = {
                         Toast.makeText(localContext, "Microsoft Sign-In coming soon", Toast.LENGTH_SHORT).show()
@@ -137,7 +189,6 @@ fun LoginScreen(navController: NavController, context: Context) {
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        // microsoft logo.
                         Column(modifier = Modifier.padding(end = 12.dp)) {
                             Row {
                                 Box(modifier = Modifier.size(8.dp).background(Color(0xFFF25022)))
