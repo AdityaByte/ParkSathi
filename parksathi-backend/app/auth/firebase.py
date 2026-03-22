@@ -30,22 +30,19 @@ def verify_firebase_token(creds: HTTPAuthorizationCredentials = Depends(security
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-async def get_current_user_role(res: HTTPAuthorizationCredentials = Depends(security)):
+async def get_current_user(res: HTTPAuthorizationCredentials = Depends(security)):
     try:
         decoded_token = verify_firebase_token(res)
         uid = decoded_token['uid']
-
-        # Fetching the user from mongodb.
+        # Now we need to find the user and return it.
         user = await User.find_one(User.uid == uid)
-
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found in database")
-
-        is_owner = UserType.OWNER in user.roles
-        return {"uid": uid, "is_owner": is_owner, "roles": user.roles}
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        return user
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token"
+            detail=f"Authentication Failed: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
         )

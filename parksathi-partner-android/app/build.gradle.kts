@@ -9,6 +9,12 @@ plugins {
 val firebaseWebClientID: String = gradleLocalProperties(rootDir, providers)
     .getProperty("FIREBASE_WEB_CLIENT_ID") ?: ""
 
+val googleMapsApiKey: String = gradleLocalProperties(rootDir, providers)
+    .getProperty("GOOGLE_MAPS_API_KEY") ?: ""
+
+val backendOrigin: String = gradleLocalProperties(rootDir, providers)
+    .getProperty("BACKEND_ORIGIN") ?: ""
+
 
 android {
     namespace = "in.parksathi.partner"
@@ -24,6 +30,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "FIREBASE_WEB_CLIENT_ID", "\"$firebaseWebClientID\"")
+        manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = googleMapsApiKey
+        buildConfigField("String", "BACKEND_ORIGIN", "\"$backendOrigin\"")
     }
 
     buildTypes {
@@ -58,6 +66,11 @@ dependencies {
     implementation("androidx.credentials:credentials:1.3.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+
+    // Google Maps
+    implementation("com.google.maps.android:maps-compose:6.4.1")
+    implementation("com.google.android.gms:play-services-maps:19.0.0")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 
     implementation("androidx.navigation:navigation-compose:2.7.7")
 

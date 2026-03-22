@@ -1,6 +1,7 @@
 package `in`.parksathi.partner.ui.screens
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -17,8 +18,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.google.firebase.auth.FirebaseAuth
+import `in`.parksathi.partner.config.RetrofitClient
+import `in`.parksathi.partner.enum.VerificationStatus
 import `in`.parksathi.partner.ui.navigation.Screen
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.tasks.await
 
 @Composable
 fun SplashScreen(navController: NavController, context: Context) {
@@ -27,12 +32,10 @@ fun SplashScreen(navController: NavController, context: Context) {
     
     var startTextAnimation by remember { mutableStateOf(false) }
 
-    // logo animation is done by these.
     val logoScale = remember { Animatable(0.6f) }
     val logoAlpha = remember { Animatable(0f) }
 
     LaunchedEffect(key1 = true) {
-        // Parallel animations for the logo
         delay(200)
         logoAlpha.animateTo(1f, animationSpec = tween(800))
         logoScale.animateTo(
@@ -46,11 +49,57 @@ fun SplashScreen(navController: NavController, context: Context) {
         delay(400)
         startTextAnimation = true
         
-        delay(2000)
+        delay(1500) 
         
         if (isLoggedIn) {
-            navController.navigate(Screen.ParkingDetails.route) {
-                popUpTo(Screen.Splash.route) { inclusive = true }
+            try {
+                val user = FirebaseAuth.getInstance().currentUser
+                val token = user?.getIdToken(true)?.await()?.token
+                
+                if (token != null) {
+                    val response = RetrofitClient.instance.verifyRole("Bearer $token")
+                    Log.d("SplashScreen", "Verification response: $response")
+                    if (response.isSuccessful) {
+                        val roleData = response.body()
+                        if (roleData?.verificationStatus != null) {
+                            sharedPreferences.edit().putBoolean("isParkingFormSubmitted", true).apply()
+                            
+                            if (roleData.verificationStatus == VerificationStatus.PENDING) {
+                                navController.navigate(Screen.PendingVerification.route) {
+                                    popUpTo(Screen.Splash.route) { inclusive = true }
+                                }
+                            } else {
+                                navController.navigate(Screen.Dashboard.route) {
+                                    popUpTo(Screen.Splash.route) { inclusive = true }
+                                }
+                            }
+                        } else {
+                            sharedPreferences.edit().putBoolean("isParkingFormSubmitted", false).apply()
+                            navController.navigate(Screen.ParkingDetails.route) {
+                                popUpTo(Screen.Splash.route) { inclusive = true }
+                            }
+                        }
+                    } else if (response.code() == 404) {
+                        // Backend returns 404 if no parking details found
+                        sharedPreferences.edit().putBoolean("isParkingFormSubmitted", false).apply()
+                        navController.navigate(Screen.ParkingDetails.route) {
+                            popUpTo(Screen.Splash.route) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Splash.route) { inclusive = true }
+                        }
+                    }
+                } else {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("SplashScreen", "Verification failed: ${e.message}")
+                navController.navigate(Screen.Login.route) {
+                    popUpTo(Screen.Splash.route) { inclusive = true }
+                }
             }
         } else {
             navController.navigate(Screen.Login.route) {
@@ -73,7 +122,6 @@ fun SplashScreen(navController: NavController, context: Context) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                // Professional Logo Box with primary color
                 Box(
                     modifier = Modifier
                         .size(72.dp)

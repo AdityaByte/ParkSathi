@@ -1,7 +1,7 @@
 package `in`.parksathi.partner.api
 
-import `in`.parksathi.partner.dto.ApiResponse
-import `in`.parksathi.partner.dto.VerifyRoleRequest
+import `in`.parksathi.partner.dto.CreateUserResponse
+import `in`.parksathi.partner.dto.ParkingResponse
 import `in`.parksathi.partner.dto.VerifyRoleResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -10,18 +10,27 @@ import retrofit2.http.*
 
 interface ApiService {
 
-    @POST("auth/verify-role")
+    @POST("user/create")
+    suspend fun createUser(
+        @Header("Authorization") token: String
+    ): Response<CreateUserResponse>
+
+    @GET("auth/verify-role")
     suspend fun verifyRole(
-        @Body request: VerifyRoleRequest
+        @Header("Authorization") token: String
     ): Response<VerifyRoleResponse>
 
     @Multipart
-    @POST("owner/details")
-    suspend fun submitOwnerDetails(
-        @Part("parkingName") parkingName: RequestBody,
+    @POST("owner/create")
+    suspend fun submitParkingDetails(
+        @Part("parking_name") parkingName: RequestBody,
         @Part("address") address: RequestBody,
-        @Part("phoneNumber") phoneNumber: RequestBody,
-        @Part("idProof") idProof: RequestBody,
-        @Part licenseProof: MultipartBody.Part
-    ): Response<ApiResponse>
+        @Part("phone_number") phoneNumber: RequestBody,
+        @Part("id_proof") idProof: RequestBody,
+        @Part("slots") slots: RequestBody,
+        @Part("lat") lat: RequestBody,
+        @Part("lng") lng: RequestBody,
+        @Part file: MultipartBody.Part,
+        @Header("Authorization") token: String
+    ): Response<ParkingResponse>
 }
