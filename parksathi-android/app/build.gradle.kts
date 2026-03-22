@@ -9,6 +9,9 @@ plugins {
 val firebaseWebClientID: String = gradleLocalProperties(rootDir, providers)
     .getProperty("FIREBASE_WEB_CLIENT_ID") ?: ""
 
+val backendOrigin: String = gradleLocalProperties(rootDir, providers)
+    .getProperty("BACKEND_ORIGIN") ?: ""
+
 android {
     namespace = "in.parksathi.app"
     compileSdk = 36
@@ -23,6 +26,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "FIREBASE_WEB_CLIENT_ID", "\"$firebaseWebClientID\"")
+        buildConfigField("String", "BACKEND_ORIGIN", "\"$backendOrigin\"")
     }
 
     buildTypes {
@@ -45,6 +49,11 @@ android {
 }
 
 dependencies {
+    // Retrofit for api calls.
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.9.3")
+
     implementation(platform("com.google.firebase:firebase-bom:34.10.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")

@@ -1,10 +1,23 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from api.v1.router import router as APIRouter
+from app.config.database import init_db
+from app.api.router import router as APIRouter
+import logging
 
-app = FastAPI()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-app.include_router(APIRouter, prefix="/api/v1")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Trying to connect to mongodb")
+    await init_db()
+    yield
+    print("Shutting down and closing all the opened connections.")
+
+app = FastAPI(lifespan=lifespan)
+
+app.include_router(APIRouter, prefix="/api")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="localhost", port=8080)
+    uvicorn.run(app, host="0.0.0.0", port=8080)

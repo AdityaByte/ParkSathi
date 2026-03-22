@@ -7,6 +7,8 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pathlib import Path
 
+from app.model.user import User, UserType
+
 if not firebase_admin._apps:
     # Initializing the firebase admin SDK.
     service_account_file_path = Path(__file__).parent.parent.parent / "service_account_key.json"
@@ -26,4 +28,24 @@ def verify_firebase_token(creds: HTTPAuthorizationCredentials = Depends(security
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Authentication Failed: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+
+async def get_current_user_role(res: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        decoded_token = verify_firebase_token(res)
+        uid = decoded_token['uid']
+
+        # Fetching the user from mongodb.
+        user = await User.find_one(User.uid == uid)
+
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found in database")
+
+        is_owner = UserType.OWNER in user.roles
+        return {"uid": uid, "is_owner": is_owner, "roles": user.roles}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
         )

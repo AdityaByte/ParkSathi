@@ -5,8 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "beanie>=2.0.1",
     "fastapi[standard]>=0.135.1",
     "firebase-admin>=7.3.0",
+    "motor>=3.7.1",
+    "pydantic-settings>=2.13.1",
     "pymysql>=1.1.2",
-    "sqlalchemy>=2.0.48",
 ]

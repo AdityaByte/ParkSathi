@@ -25,6 +25,7 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import `in`.parksathi.app.BuildConfig
+import `in`.parksathi.app.config.RetrofitClient
 import `in`.parksathi.app.ui.navigation.Screen
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -67,7 +68,7 @@ fun LoginScreen(navController: NavController, context: Context) {
             if (isLoading) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             } else {
-                // Google signin button.
+                // Google sign-in button.
                 OutlinedButton(
                     onClick = {
                         if (firebaseWebClientId.isEmpty()) {
@@ -78,9 +79,34 @@ fun LoginScreen(navController: NavController, context: Context) {
                             isLoading = true
                             val success = signInWithGoogle(localContext, credentialManager, firebaseWebClientId)
                             if (success) {
-                                sharedPreferences.edit().putBoolean("isLoggedIn", true).apply()
-                                navController.navigate(Screen.Dashboard.route) {
-                                    popUpTo(Screen.Login.route) { inclusive = true }
+                                try {
+                                    val user = FirebaseAuth.getInstance().currentUser
+                                    val tokenResult = user?.getIdToken(true)?.await()
+                                    val idToken = tokenResult?.token
+
+                                    if (idToken != null) {
+                                        // Sending the token to the backend.
+                                        val response = RetrofitClient.instance.createUser("Bearer $idToken")
+                                        
+                                        if (response.isSuccessful && response.body()?.success == true) {
+                                            // When the verification is correct.
+                                            sharedPreferences.edit().putBoolean("isLoggedIn", true).apply()
+                                            navController.navigate(Screen.Dashboard.route) {
+                                                popUpTo(Screen.Login.route) { inclusive = true }
+                                            }
+                                        } else {
+                                            // Backend error
+                                            val errorMsg = response.body()?.message ?: "Backend verification failed"
+                                            Toast.makeText(localContext, errorMsg, Toast.LENGTH_LONG).show()
+                                            // Signing out from the google.
+                                            FirebaseAuth.getInstance().signOut()
+                                        }
+                                    } else {
+                                        Toast.makeText(localContext, "Failed to retrieve auth token", Toast.LENGTH_SHORT).show()
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e("LoginScreen", "Backend communication error", e)
+                                    Toast.makeText(localContext, "Network error: ${e.message}", Toast.LENGTH_SHORT).show()
                                 }
                             } else {
                                 Toast.makeText(localContext, "Google Login failed", Toast.LENGTH_SHORT).show()
