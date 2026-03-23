@@ -25,6 +25,7 @@ async def create_owner(
         file: UploadFile,
         current_user: User
 ):
+    
     _, file_extension = os.path.splitext(file.filename)
     unique_filename = f"{uuid.uuid4()}{file_extension}"
     file_path = os.path.join(UPLOADS_DIR, unique_filename)
@@ -45,7 +46,7 @@ async def create_owner(
         address=address,
         phone_number=phone_number,
         id_proof=id_proof,
-        coordinates=Coordinates(lat=lat, lng=lng),
+        coordinates=Coordinates(type="Point", coordinates=[lng, lat]),
         verification_file_url=file_path,
         verification_status=VerificationStatus.PENDING,
         slots=slots

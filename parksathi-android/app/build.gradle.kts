@@ -12,6 +12,9 @@ val firebaseWebClientID: String = gradleLocalProperties(rootDir, providers)
 val backendOrigin: String = gradleLocalProperties(rootDir, providers)
     .getProperty("BACKEND_ORIGIN") ?: ""
 
+val mapsApiKey: String = gradleLocalProperties(rootDir, providers)
+    .getProperty("MAPS_API_KEY") ?: ""
+
 android {
     namespace = "in.parksathi.app"
     compileSdk = 36
@@ -27,6 +30,9 @@ android {
 
         buildConfigField("String", "FIREBASE_WEB_CLIENT_ID", "\"$firebaseWebClientID\"")
         buildConfigField("String", "BACKEND_ORIGIN", "\"$backendOrigin\"")
+        buildConfigField("String", "MAPS_API_KEY", "\"$mapsApiKey\"")
+        
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     buildTypes {
@@ -49,6 +55,9 @@ android {
 }
 
 dependencies {
+    implementation("androidx.vectordrawable:vectordrawable:1.1.0")
+    implementation("androidx.vectordrawable:vectordrawable-animated:1.1.0")
+
     // Retrofit for api calls.
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
@@ -72,6 +81,14 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation("androidx.compose.material:material-icons-extended")
+
+    // Google Maps & Places
+    implementation("com.google.maps.android:maps-compose:4.4.1")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.gms:play-services-location:21.2.0")
+    implementation("com.google.android.libraries.places:places:5.1.1")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

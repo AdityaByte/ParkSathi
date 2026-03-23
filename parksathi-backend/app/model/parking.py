@@ -1,7 +1,8 @@
 """The user submits the details during the registration
 of the parking spot as to be saved in db and been verified by the user."""
+from decimal import DefaultContext
 from beanie import Link, Document
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from enum import Enum
 
 from app.model.user import User
@@ -12,8 +13,8 @@ class VerificationStatus(str, Enum):
     REJECTED = "rejected"
 
 class Coordinates(BaseModel):
-    lat: float
-    lng: float
+    type: str = "Point"
+    coordinates: list[float] = Field(default_factory=lambda: [0.0, 0.0])
 
 class ParkingDetails(Document):
     # The details were associated with which user.
@@ -30,3 +31,5 @@ class ParkingDetails(Document):
 
     class Settings:
         name = "parking_details"
+        # Creating a geospatial index on the coordinates field.
+        indexes = [[("coordinates.coordinates", "2dsphere")]]
