@@ -2,7 +2,6 @@ package `in`.parksathi.app.ui.screens
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -32,14 +31,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.libraries.places.api.Places
-import com.google.android.libraries.places.api.model.AutocompletePrediction
-import com.google.android.libraries.places.api.model.Place
-import com.google.android.libraries.places.api.net.FetchPlaceRequest
-import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
-import com.google.android.libraries.places.api.net.PlacesClient
 import com.google.maps.android.compose.*
-import `in`.parksathi.app.BuildConfig
 import `in`.parksathi.app.dto.NearbyParkingSpot
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -49,14 +41,6 @@ fun ExploreScreen(viewModel: ExploreViewModel = viewModel()) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     
-    // Initialize Places SDK
-    val placesClient = remember {
-        if (!Places.isInitialized()) {
-            Places.initialize(context, BuildConfig.MAPS_API_KEY)
-        }
-        Places.createClient(context)
-    }
-
     var hasLocationPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(
@@ -79,18 +63,18 @@ fun ExploreScreen(viewModel: ExploreViewModel = viewModel()) {
         }
     }
 
-    val defaultLocation = LatLng(20.5937, 78.9629)
+    val defaultLocation = LatLng(28.6139, 77.2090) // Delhi
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(defaultLocation, 5f)
+        position = CameraPosition.fromLatLngZoom(defaultLocation, 12f)
     }
 
     val parkingSpots by viewModel.nearbyParkingSpots
     val selectedSpot by viewModel.selectedSpot
     val isLoading by viewModel.isLoading
+    val dummyPredictions by viewModel.dummyPredictions
 
     // Search state
     var searchQuery by remember { mutableStateOf("") }
-    var predictions by remember { mutableStateOf<List<AutocompletePrediction>>(emptyList()) }
     var isSearching by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -135,22 +119,18 @@ fun ExploreScreen(viewModel: ExploreViewModel = viewModel()) {
                 query = searchQuery,
                 onQueryChange = { query ->
                     searchQuery = query
-                    if (query.isNotEmpty()) {
-                        getPredictions(placesClient, query) { predictions = it }
-                    } else {
-                        predictions = emptyList()
-                    }
+                    viewModel.getDummyPredictions(query)
                 },
                 onSearchActiveChange = { isSearching = it },
                 active = isSearching,
                 onClear = {
                     searchQuery = ""
-                    predictions = emptyList()
+                    viewModel.clearPredictions()
                     isSearching = false
                 }
             )
 
-            if (isSearching && predictions.isNotEmpty()) {
+            if (isSearching && dummyPredictions.isNotEmpty()) {
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -160,22 +140,19 @@ fun ExploreScreen(viewModel: ExploreViewModel = viewModel()) {
                     shadowElevation = 8.dp
                 ) {
                     LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
-                        items(predictions) { prediction ->
+                        items(dummyPredictions) { prediction ->
                             ListItem(
-                                headlineContent = { Text(prediction.getPrimaryText(null).toString()) },
-                                supportingContent = { Text(prediction.getSecondaryText(null).toString()) },
+                                headlineContent = { Text(prediction.primaryText) },
+                                supportingContent = { Text(prediction.secondaryText) },
                                 leadingContent = { Icon(Icons.Default.LocationOn, contentDescription = null) },
                                 modifier = Modifier.clickable {
-                                    val placeId = prediction.placeId
-                                    fetchPlaceDetails(placesClient, placeId) { latLng ->
-                                        searchQuery = prediction.getFullText(null).toString()
-                                        isSearching = false
-                                        scope.launch {
-                                            cameraPositionState.animate(
-                                                CameraUpdateFactory.newLatLngZoom(latLng, 14f)
-                                            )
-                                            viewModel.fetchNearbyParking(latLng.latitude, latLng.longitude)
-                                        }
+                                    searchQuery = prediction.fullText
+                                    isSearching = false
+                                    scope.launch {
+                                        cameraPositionState.animate(
+                                            CameraUpdateFactory.newLatLngZoom(prediction.latLng, 14f)
+                                        )
+                                        viewModel.fetchNearbyParking(prediction.latLng.latitude, prediction.latLng.longitude)
                                     }
                                 }
                             )
@@ -200,7 +177,9 @@ fun ExploreScreen(viewModel: ExploreViewModel = viewModel()) {
         }
 
         if (isLoading) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
         }
     }
 }
@@ -224,7 +203,7 @@ fun SearchBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .onFocusChanged { if (it.isFocused) onSearchActiveChange(true) },
-            placeholder = { Text("Search for parking...") },
+            placeholder = { Text("Search Parking") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             trailingIcon = {
                 if (query.isNotEmpty() || active) {
@@ -316,22 +295,4 @@ fun ParkingDetailCard(spot: NearbyParkingSpot, onBookNow: () -> Unit) {
             }
         }
     }
-}
-
-// Helpers for Places API
-private fun getPredictions(client: PlacesClient, query: String, onResult: (List<AutocompletePrediction>) -> Unit) {
-    val request = FindAutocompletePredictionsRequest.builder()
-        .setQuery(query)
-        .build()
-    client.findAutocompletePredictions(request)
-        .addOnSuccessListener { response -> onResult(response.autocompletePredictions) }
-        .addOnFailureListener { e -> Log.e("Places", "Prediction fetch failed", e) }
-}
-
-private fun fetchPlaceDetails(client: PlacesClient, placeId: String, onResult: (LatLng) -> Unit) {
-    val placeFields = listOf(Place.Field.LOCATION)
-    val request = FetchPlaceRequest.newInstance(placeId, placeFields)
-    client.fetchPlace(request)
-        .addOnSuccessListener { response -> response.place.location?.let { onResult(it) } }
-        .addOnFailureListener { e -> Log.e("Places", "Place details fetch failed", e) }
 }
