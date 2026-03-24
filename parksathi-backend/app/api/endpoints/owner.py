@@ -38,10 +38,13 @@ async def create_owner(
             shutil.copyfileobj(file.file, buffer)
     finally:
         file.file.close()
+        
+    # For creating a unique id for the parking spot.
 
     new_parking = ParkingDetails(
         user=current_user,
         uid=current_user.uid,
+        parking_id=uuid.uuid4(),
         parking_name=parking_name,
         address=address,
         phone_number=phone_number,

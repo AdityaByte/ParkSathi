@@ -1,10 +1,12 @@
 """This file mainly handles all the routes of the v1 api"""
 
 from http import HTTPStatus
+import uuid
 
 from fastapi import APIRouter, Depends, Response, UploadFile
 from fastapi.params import Form
 
+from app.api.endpoints.booking import acquire_booking
 from app.api.endpoints.admin import change_owner_form_verification_status, get_pending_owner_verification_form
 from app.api.endpoints.owner import create_owner
 from app.api.endpoints.parking import find_nearby_parking_spot
@@ -112,3 +114,13 @@ async def handle_find_nearby_parking(lat: float, lng: float):
 
 
 # Block end - parking routes.
+
+
+
+# Block start - booking routes.
+
+@router.post("/bookings/create", status_code=HTTPStatus.CREATED)
+async def handle_create_booking(parking_id: str, token: str = Depends(verify_firebase_token)):
+    return await acquire_booking(token['uid'], uuid.UUID(parking_id))
+
+# Block end - booking routes.

@@ -2,6 +2,7 @@
 of the parking spot as to be saved in db and been verified by the user."""
 from decimal import DefaultContext
 from beanie import Link, Document
+from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
 from enum import Enum
 
@@ -20,6 +21,7 @@ class ParkingDetails(Document):
     # The details were associated with which user.
     user: Link[User]
     uid: str
+    parking_id: UUID = Field(default_factory=uuid4)
     parking_name: str
     address: str
     phone_number: str
