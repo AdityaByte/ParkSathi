@@ -18,6 +18,9 @@ class BookingsViewModel : ViewModel() {
     private val _isLoading = mutableStateOf(false)
     val isLoading: State<Boolean> = _isLoading
 
+    private val _showQrDialog = mutableStateOf<String?>(null)
+    val showQrDialog: State<String?> = _showQrDialog
+
     init {
         fetchBookings()
     }
@@ -44,5 +47,37 @@ class BookingsViewModel : ViewModel() {
                 _isLoading.value = false
             }
         }
+    }
+
+    fun cancelBooking(bookingId: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val user = FirebaseAuth.getInstance().currentUser
+                val tokenResult = user?.getIdToken(true)?.await()
+                val idToken = tokenResult?.token
+
+                if (idToken != null) {
+                    val response = RetrofitClient.instance.cancelBooking(bookingId, "Bearer $idToken")
+                    if (response.isSuccessful) {
+                        fetchBookings() // Refresh the list
+                    } else {
+                        Log.e("BookingsViewModel", "Cancel Error: ${response.code()}")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("BookingsViewModel", "Cancel Exception: ${e.message}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun showQr(bookingId: String) {
+        _showQrDialog.value = bookingId
+    }
+
+    fun dismissQrDialog() {
+        _showQrDialog.value = null
     }
 }

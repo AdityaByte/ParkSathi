@@ -1,9 +1,15 @@
 package `in`.parksathi.app.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.ConfirmationNumber
+import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -11,7 +17,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import `in`.parksathi.app.dto.BookingResponse
 import `in`.parksathi.app.dto.BookingStatus
@@ -21,6 +30,7 @@ import `in`.parksathi.app.dto.BookingStatus
 fun BookingsScreen(viewModel: BookingsViewModel = viewModel()) {
     val bookings by viewModel.bookings
     val isLoading by viewModel.isLoading
+    val qrBookingId by viewModel.showQrDialog
 
     Scaffold(
         topBar = {
@@ -48,7 +58,135 @@ fun BookingsScreen(viewModel: BookingsViewModel = viewModel()) {
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(bookings) { booking ->
-                        BookingItem(booking)
+                        BookingItem(
+                            booking = booking,
+                            onCancel = { viewModel.cancelBooking(booking.bookingId) },
+                            onGenerateQr = { viewModel.showQr(booking.bookingId) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    qrBookingId?.let { bookingId ->
+        QrCodeDialog(bookingId = bookingId, onDismiss = { viewModel.dismissQrDialog() })
+    }
+}
+
+@Composable
+fun BookingItem(
+    booking: BookingResponse,
+    onCancel: () -> Unit,
+    onGenerateQr: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = booking.parkingName,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Parking Booking",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.Gray
+                    )
+                }
+
+                StatusBadge(status = booking.bookingStatus)
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Divider()
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.ConfirmationNumber,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "ID: ${booking.bookingId}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
+
+            if (booking.acquiredAt != null) {
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.AccessTime,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Acquired: ${booking.acquiredAt}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+            }
+
+            if (booking.bookingStatus == BookingStatus.BOOKED) {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+
+                    OutlinedButton(
+                        onClick = onCancel,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                        border = BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Icon(Icons.Default.Cancel, contentDescription = null)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Cancel")
+                    }
+
+                    Button(
+                        onClick = onGenerateQr,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.QrCode, contentDescription = null)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Show QR")
                     }
                 }
             }
@@ -57,50 +195,10 @@ fun BookingsScreen(viewModel: BookingsViewModel = viewModel()) {
 }
 
 @Composable
-fun BookingItem(booking: BookingResponse) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = booking.parkingName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                StatusBadge(status = booking.bookingStatus)
-            }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = "Booking ID: ${booking.bookingId}",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
-            )
-            
-            if (booking.acquiredAt != null) {
-                Text(
-                    text = "Acquired at: ${booking.acquiredAt}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
-                )
-            }
-        }
-    }
-}
-
-@Composable
 fun StatusBadge(status: BookingStatus? = null) {
     val color = when (status) {
-        BookingStatus.CONFIRMED -> Color(0xFF2E7D32)
-        BookingStatus.PENDING -> Color(0xFFF57C00)
+        BookingStatus.BOOKED -> Color(0xFF2E7D32)
+        BookingStatus.EXPIRED -> Color(0xFFF57C00)
         BookingStatus.CANCELLED -> Color(0xFFD32F2F)
         BookingStatus.COMPLETED -> Color(0xFF1976D2)
         BookingStatus.ACQUIRED -> Color(0xFF7B1FA2)
@@ -119,5 +217,71 @@ fun StatusBadge(status: BookingStatus? = null) {
             color = color,
             fontWeight = FontWeight.Bold
         )
+    }
+}
+
+@Composable
+fun QrCodeDialog(bookingId: String, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Booking QR Code",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Placeholder for QR Code
+                Surface(
+                    modifier = Modifier.size(200.dp),
+                    color = Color.White,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Default.QrCode,
+                            contentDescription = null,
+                            modifier = Modifier.size(150.dp),
+                            tint = Color.Black
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Text(
+                    text = bookingId,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    textAlign = TextAlign.Center
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Text(
+                    text = "Show this QR to the parking owner to acquire your spot.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                TextButton(onClick = onDismiss) {
+                    Text("Close")
+                }
+            }
+        }
     }
 }

@@ -28,4 +28,10 @@ interface ApiService {
         @Header("Authorization") token: String
     ): Response<List<BookingResponse>>
 
+    @POST("bookings/cancel")
+    suspend fun cancelBooking(
+        @Query("booking_id") bookingId: String,
+        @Header("Authorization") token: String
+    ): Response<Unit>
+
 }

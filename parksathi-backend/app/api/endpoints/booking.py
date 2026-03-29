@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 import logging
 import ast
 from datetime import datetime
+from beanie.operators import Set
 
 
 from fastapi import HTTPException
@@ -69,3 +70,14 @@ async def get_bookings(uid: str) -> list[BookingResponse]:
         )
     
     return result
+    
+async def cancel_booking(booking_id: UUID, uid: str):
+    result = await Booking.find_one(
+        Booking.booking_id == booking_id,
+        Booking.uid == uid
+    ).update(
+        Set({Booking.booking_status: BookingStatus.CANCELLED})
+    )
+
+    if result is None:
+        raise HTTPException(status_code=404, detail="Booking not found")

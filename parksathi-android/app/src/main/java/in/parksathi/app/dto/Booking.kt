@@ -3,11 +3,13 @@ package `in`.parksathi.app.dto
 import com.google.gson.annotations.SerializedName
 
 enum class BookingStatus {
-    @SerializedName("pending") PENDING,
-    @SerializedName("confirmed") CONFIRMED,
-    @SerializedName("cancelled") CANCELLED,
+    @SerializedName("booked") BOOKED,
+    @SerializedName("acquired") ACQUIRED,
     @SerializedName("completed") COMPLETED,
-    @SerializedName("acquired") ACQUIRED
+    @SerializedName("cancelled") CANCELLED,
+
+    @SerializedName("expired") EXPIRED
+
 }
 
 data class BookingResponse(
