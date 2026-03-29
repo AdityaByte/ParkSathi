@@ -2,6 +2,7 @@ package `in`.parksathi.app.ui.screens
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -31,9 +32,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.firebase.auth.FirebaseAuth
 import com.google.maps.android.compose.*
+import `in`.parksathi.app.config.RetrofitClient
 import `in`.parksathi.app.dto.NearbyParkingSpot
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.util.Locale
 
 @Composable
@@ -171,7 +175,24 @@ fun ExploreScreen(viewModel: ExploreViewModel = viewModel()) {
         ) {
             selectedSpot?.let { spot ->
                 ParkingDetailCard(spot = spot, onBookNow = {
-                    // Navigate to booking flow
+                    scope.launch {
+                        // Logic for booking goes here.
+                        // Here we need to make a backend call for making the book ready and in the booking screen we will fetch out the booking details.
+                        val user = FirebaseAuth.getInstance().currentUser
+                        val tokenResult = user?.getIdToken(true)?.await()
+                        val idToken = tokenResult?.token
+
+                        if (idToken != null) {
+                            val response = RetrofitClient.instance.createBooking(spot.parkingId, "Bearer ${idToken}")
+                            if (response.isSuccessful) {
+                                Toast.makeText(context, "Booking successful", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, "Failed to book a slot try again later.", Toast.LENGTH_LONG).show()
+                            }
+                        } else {
+                            Toast.makeText(context, "Failed to retrieve auth token", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 })
             }
         }

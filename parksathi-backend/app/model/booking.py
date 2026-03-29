@@ -16,6 +16,7 @@ class BookingStatus(str, Enum):
 class Booking(Document):
     uid: str # This is the unique key which maps to the user booking.
     booking_id: UUID = Field(default_factory=uuid4)
+    parking_id: UUID = Field(default_factory=uuid4)
     parking_details: Link[ParkingDetails]
     booking_status: BookingStatus
     created_at: datetime = Field(default_factory=datetime.utcnow)

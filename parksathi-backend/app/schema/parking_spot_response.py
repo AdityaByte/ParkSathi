@@ -1,3 +1,4 @@
+from uuid import UUID
 from pydantic import BaseModel
 
 from app.model.parking import VerificationStatus
@@ -8,6 +9,7 @@ class Coordinates(BaseModel):
 
 class NearbyParkingSpot(BaseModel):
     uid: str # The parking spot linked with which owner.
+    parking_id: str
     parking_name: str
     address: str
     phone_number: str

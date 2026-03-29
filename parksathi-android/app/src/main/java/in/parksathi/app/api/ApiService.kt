@@ -1,5 +1,6 @@
 package `in`.parksathi.app.api
 
+import `in`.parksathi.app.dto.BookingResponse
 import `in`.parksathi.app.dto.CreateUserResponse
 import `in`.parksathi.app.dto.NearbyParkingSpot
 import retrofit2.Response
@@ -15,5 +16,16 @@ interface ApiService {
         @Query("lat") lat: Double,
         @Query("lng") lng: Double
     ): Response<List<NearbyParkingSpot>>
+
+    @POST("bookings/create")
+    suspend fun createBooking(
+        @Query("parking_id") parkingId: String,
+        @Header("Authorization") token: String
+    ): Response<BookingResponse>
+
+    @GET("bookings/my")
+    suspend fun getMyBookings(
+        @Header("Authorization") token: String
+    ): Response<List<BookingResponse>>
 
 }

@@ -68,7 +68,6 @@ fun LoginScreen(navController: NavController, context: Context) {
             if (isLoading) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             } else {
-                // Google sign-in button.
                 OutlinedButton(
                     onClick = {
                         if (firebaseWebClientId.isEmpty()) {
@@ -77,41 +76,39 @@ fun LoginScreen(navController: NavController, context: Context) {
                         }
                         scope.launch {
                             isLoading = true
-                            val success = signInWithGoogle(localContext, credentialManager, firebaseWebClientId)
-                            if (success) {
-                                try {
+                            try {
+                                val success = signInWithGoogle(localContext, credentialManager, firebaseWebClientId)
+                                if (success) {
                                     val user = FirebaseAuth.getInstance().currentUser
                                     val tokenResult = user?.getIdToken(true)?.await()
                                     val idToken = tokenResult?.token
 
                                     if (idToken != null) {
-                                        // Sending the token to the backend.
                                         val response = RetrofitClient.instance.createUser("Bearer $idToken")
                                         
-                                        if (response.isSuccessful && response.body()?.success == true) {
-                                            // When the verification is correct.
+                                        if (response.isSuccessful) {
                                             sharedPreferences.edit().putBoolean("isLoggedIn", true).apply()
+                                            
                                             navController.navigate(Screen.Dashboard.route) {
                                                 popUpTo(Screen.Login.route) { inclusive = true }
                                             }
                                         } else {
-                                            // Backend error
                                             val errorMsg = response.body()?.message ?: "Backend verification failed"
                                             Toast.makeText(localContext, errorMsg, Toast.LENGTH_LONG).show()
-                                            // Signing out from the google.
                                             FirebaseAuth.getInstance().signOut()
                                         }
                                     } else {
                                         Toast.makeText(localContext, "Failed to retrieve auth token", Toast.LENGTH_SHORT).show()
                                     }
-                                } catch (e: Exception) {
-                                    Log.e("LoginScreen", "Backend communication error", e)
-                                    Toast.makeText(localContext, "Network error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(localContext, "Google Login failed", Toast.LENGTH_SHORT).show()
                                 }
-                            } else {
-                                Toast.makeText(localContext, "Google Login failed", Toast.LENGTH_SHORT).show()
+                            } catch (e: Exception) {
+                                Log.e("LoginScreen", "Login error", e)
+                                Toast.makeText(localContext, "Error: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                            } finally {
+                                isLoading = false
                             }
-                            isLoading = false
                         }
                     },
                     modifier = Modifier
@@ -127,7 +124,6 @@ fun LoginScreen(navController: NavController, context: Context) {
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        // Google logo - as we are using typography right now later on add a drawable for that.
                         Text(
                             text = "G",
                             fontSize = 20.sp,
@@ -145,7 +141,6 @@ fun LoginScreen(navController: NavController, context: Context) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // microsoft btn.
                 OutlinedButton(
                     onClick = {
                         Toast.makeText(localContext, "Microsoft Sign-In coming soon", Toast.LENGTH_SHORT).show()
@@ -163,7 +158,6 @@ fun LoginScreen(navController: NavController, context: Context) {
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        // microsoft logo.
                         Column(modifier = Modifier.padding(end = 12.dp)) {
                             Row {
                                 Box(modifier = Modifier.size(8.dp).background(Color(0xFFF25022)))
@@ -206,6 +200,7 @@ private suspend fun signInWithGoogle(
     val googleIdOption = GetGoogleIdOption.Builder()
         .setFilterByAuthorizedAccounts(false)
         .setServerClientId(webClientId)
+        .setAutoSelectEnabled(true)
         .build()
 
     val request = GetCredentialRequest.Builder()
@@ -221,10 +216,11 @@ private suspend fun signInWithGoogle(
             val authResult = FirebaseAuth.getInstance().signInWithCredential(firebaseCredential).await()
             authResult.user != null
         } else {
+            Log.e("LoginScreen", "Received unexpected credential type: ${credential.type}")
             false
         }
     } catch (e: GetCredentialException) {
-        Log.e("LoginScreen", "Google Sign-In failed", e)
+        Log.e("LoginScreen", "Credential Manager Error (${e.type}): ${e.message}")
         false
     } catch (e: Exception) {
         Log.e("LoginScreen", "Unexpected error: ${e.message}", e)

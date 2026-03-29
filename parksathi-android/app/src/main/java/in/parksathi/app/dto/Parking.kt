@@ -16,6 +16,7 @@ data class Coordinates(
 data class NearbyParkingSpot(
     @SerializedName("uid") val uid: String,
     @SerializedName("parking_name") val parkingName: String,
+    @SerializedName("parking_id") val parkingId: String,
     @SerializedName("address") val address: String,
     @SerializedName("phone_number") val phoneNumber: String,
     @SerializedName("coordinates") val coordinates: Coordinates,

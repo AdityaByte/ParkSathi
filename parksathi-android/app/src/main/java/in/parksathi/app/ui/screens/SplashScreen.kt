@@ -18,22 +18,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.google.firebase.auth.FirebaseAuth
 import `in`.parksathi.app.ui.navigation.Screen
 import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(navController: NavController, context: Context) {
     val sharedPreferences = context.getSharedPreferences("parksathi_prefs", Context.MODE_PRIVATE)
+    
+    // Check both SharedPreferences AND Firebase Auth for a more reliable check
     val isLoggedIn = sharedPreferences.getBoolean("isLoggedIn", false)
+    val currentUser = FirebaseAuth.getInstance().currentUser
     
     var startTextAnimation by remember { mutableStateOf(false) }
 
-    // logo animation is done by these.
     val logoScale = remember { Animatable(0.6f) }
     val logoAlpha = remember { Animatable(0f) }
 
     LaunchedEffect(key1 = true) {
-        // Parallel animations for the logo
         delay(200)
         logoAlpha.animateTo(1f, animationSpec = tween(800))
         logoScale.animateTo(
@@ -49,11 +51,17 @@ fun SplashScreen(navController: NavController, context: Context) {
         
         delay(2000)
         
-        if (isLoggedIn) {
+        // Robust login check: if SharedPreferences says logged in but Firebase says no, we're not logged in.
+        if (isLoggedIn && currentUser != null) {
             navController.navigate(Screen.Dashboard.route) {
                 popUpTo(Screen.Splash.route) { inclusive = true }
             }
         } else {
+            // If mismatch, clear the flag to stay consistent
+            if (isLoggedIn && currentUser == null) {
+                sharedPreferences.edit().putBoolean("isLoggedIn", false).apply()
+            }
+
             navController.navigate(Screen.Login.route) {
                 popUpTo(Screen.Splash.route) { inclusive = true }
             }
@@ -74,7 +82,6 @@ fun SplashScreen(navController: NavController, context: Context) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                // Professional Logo Box with primary color
                 Box(
                     modifier = Modifier
                         .size(72.dp)

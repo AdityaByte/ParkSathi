@@ -33,7 +33,8 @@ async def find_nearby_parking_spot(lat: float, lng: float) -> list[NearbyParking
     return [
         NearbyParkingSpot(
             uid=spot["uid"],
-            parking_name=spot["parking_name"],
+            parking_name=str(spot["parking_name"]),
+            parking_id=str(spot['parking_id']),
             address=spot["address"],
             phone_number=spot["phone_number"],
             coordinates=Coordinates(
