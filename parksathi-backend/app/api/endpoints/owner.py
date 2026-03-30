@@ -1,14 +1,12 @@
 """There were specific routes for dealing with owner specific tasks."""
 import shutil
 import uuid
-
+import os
+from pathlib import Path
 from fastapi import UploadFile
 
 from app.model.parking import ParkingDetails, Coordinates, VerificationStatus
 from app.model.user import User
-import os
-from pathlib import Path
-
 from app.schema.parking import ParkingResponse
 
 UPLOADS_DIR = "uploads"

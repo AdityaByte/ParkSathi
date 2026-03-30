@@ -29,7 +29,12 @@ class ParkingDetails(Document):
     coordinates: Coordinates
     verification_file_url: str # file url.
     verification_status: VerificationStatus = VerificationStatus.PENDING
+    # We are not maintaing a seperate relation for the slots although we can maintain just for testing we are doing this 
+    # in the next phase we will create a seperate collection of this and map it with the UID.
     slots: int
+    booked_slots: int = 0
+    acquired_slots: int = 0
+    total_income: float = 0.0
 
     class Settings:
         name = "parking_details"

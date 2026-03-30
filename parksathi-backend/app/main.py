@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.config.database import init_db
 from app.api.router import router as APIRouter
 import logging
@@ -15,6 +16,14 @@ async def lifespan(app: FastAPI):
     print("Shutting down and closing all the opened connections.")
 
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(APIRouter, prefix="/api")
 

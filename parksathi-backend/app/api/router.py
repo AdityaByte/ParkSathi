@@ -3,8 +3,9 @@
 from http import HTTPStatus
 import uuid
 
-from fastapi import APIRouter, Depends, Response, UploadFile
+from fastapi import APIRouter, Depends, Response, UploadFile, WebSocket
 from fastapi.params import Form
+from firebase_admin.auth import UidIdentifier
 
 from app.api.endpoints.booking import acquire_booking, cancel_booking, get_bookings
 from app.api.endpoints.admin import change_owner_form_verification_status, get_pending_owner_verification_form
@@ -12,10 +13,12 @@ from app.api.endpoints.owner import create_owner
 from app.api.endpoints.parking import find_nearby_parking_spot
 from app.api.endpoints.user import create_user, verify_user_role
 from app.auth.firebase import get_current_user, verify_firebase_token
-from app.model.parking import VerificationStatus
+from app.model.parking import ParkingDetails, VerificationStatus
 from app.model.user import User
 from app.schema.booking import BookingResponse
+from app.schema.dashboard import DashboardResponse
 from app.schema.parking import ParkingResponse
+from app.config.websocket_mgr import manager
 
 router = APIRouter()
 
@@ -133,3 +136,44 @@ async def handle_cancel_booking(booking_id: str, token: str = Depends(verify_fir
     return await cancel_booking(booking_id, token['uid'])
 
 # Block end - booking routes.
+
+
+# Block start - websocket endpoints.
+# 
+@router.websocket("/ws/partner")
+async def partner_socket(websocket: WebSocket, token: str):
+    await websocket.accept() 
+    uid = None
+    try:
+        user_token = verify_firebase_token(token)
+        uid = user_token['uid']
+        
+        await manager.connect(websocket, uid)
+        
+        parking = await ParkingDetails.find_one(ParkingDetails.uid == uid)
+        
+        if parking:
+            total = getattr(parking, 'slots', 0)
+            booked = getattr(parking, 'booked_slots', 0)
+            acquired = getattr(parking, 'acquired_slots', 0)
+            income = getattr(parking, 'total_income', 0.0)
+
+            response = DashboardResponse(
+                total_income=income,
+                booked_slots=booked,
+                total_slots=total,
+                acquired_slots=acquired,
+                available_slots=total - booked - acquired
+            )
+            await websocket.send_json(response.model_dump())
+
+        while True:
+            await websocket.receive_text()
+
+    except Exception as e:
+        print(f"WebSocket Error: {e}")
+    finally:
+        if uid:
+            manager.disconnect(websocket, uid)
+        
+# Block end - websocket endpoints.

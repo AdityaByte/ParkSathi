@@ -21,7 +21,10 @@ security = HTTPBearer()
 def verify_firebase_token(creds: HTTPAuthorizationCredentials = Depends(security)):
     """Validates the user token and returns the user data."""
     try:
-        decoded_token = auth.verify_id_token(creds.credentials)
+        
+        id_token = creds if isinstance(creds, str) else creds.credentials
+        
+        decoded_token = auth.verify_id_token(id_token)
         return decoded_token
     except Exception as e:
         raise HTTPException(
