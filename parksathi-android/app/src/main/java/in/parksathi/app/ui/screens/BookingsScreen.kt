@@ -1,6 +1,9 @@
 package `in`.parksathi.app.ui.screens
 
+import android.graphics.Bitmap
+import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,15 +16,18 @@ import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.qrcode.QRCodeWriter
 import `in`.parksathi.app.dto.BookingResponse
 import `in`.parksathi.app.dto.BookingStatus
 
@@ -222,6 +228,10 @@ fun StatusBadge(status: BookingStatus? = null) {
 
 @Composable
 fun QrCodeDialog(bookingId: String, onDismiss: () -> Unit) {
+    val qrBitmap = remember(bookingId) {
+        generateQrCode(bookingId, 512)
+    }
+
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
@@ -242,20 +252,17 @@ fun QrCodeDialog(bookingId: String, onDismiss: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.height(24.dp))
                 
-                // Placeholder for QR Code
                 Surface(
-                    modifier = Modifier.size(200.dp),
+                    modifier = Modifier.size(240.dp),
                     color = Color.White,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray)
+                    border = BorderStroke(1.dp, Color.LightGray),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            Icons.Default.QrCode,
-                            contentDescription = null,
-                            modifier = Modifier.size(150.dp),
-                            tint = Color.Black
-                        )
-                    }
+                    Image(
+                        bitmap = qrBitmap.asImageBitmap(),
+                        contentDescription = "QR Code",
+                        modifier = Modifier.fillMaxSize().padding(12.dp)
+                    )
                 }
                 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -284,4 +291,18 @@ fun QrCodeDialog(bookingId: String, onDismiss: () -> Unit) {
             }
         }
     }
+}
+
+fun generateQrCode(text: String, size: Int): Bitmap {
+    val writer = QRCodeWriter()
+    val bitMatrix = writer.encode(text, BarcodeFormat.QR_CODE, size, size)
+    val width = bitMatrix.width
+    val height = bitMatrix.height
+    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+    for (x in 0 until width) {
+        for (y in 0 until height) {
+            bitmap.setPixel(x, y, if (bitMatrix.get(x, y)) AndroidColor.BLACK else AndroidColor.WHITE)
+        }
+    }
+    return bitmap
 }
