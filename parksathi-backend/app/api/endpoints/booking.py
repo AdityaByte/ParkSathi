@@ -24,12 +24,16 @@ async def acquire_booking(booking_id: str, status: BookingStatus):
     
     result = await ParkingDetails.find_one(
         ParkingDetails.parking_id == booking.parking_id
-    )
+    ).update(Inc({
+        ParkingDetails.acquired_slots: 1,
+        ParkingDetails.booked_slots: -1
+    }))
     
     if result is None:
         raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="Failed to save the updated parking details document.")
         
     await booking.save()
+    return {"message": "Booking acquired successfully."}
 
 async def create_booking(uid: str, parking_id: str) -> BookingResponse:
     # firstly we need to clean the parking_id.
@@ -59,6 +63,8 @@ async def create_booking(uid: str, parking_id: str) -> BookingResponse:
     # We don't need to check for the booking slots fullness as of we filtered and showed only those parking locations
     # whose have some empty slots so we just need to update here.
     parking_details.booked_slots += 1
+    
+    await parking_details.save() # crucial: by this we are reflecting the changes.
     
     # Now we just need to save the document.
     return BookingResponse(

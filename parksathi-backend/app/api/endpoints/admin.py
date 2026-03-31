@@ -5,16 +5,27 @@ from fastapi import HTTPException
 from app.model.parking import VerificationStatus, ParkingDetails
 import logging
 
+from app.model.user import User, UserType
+
 async def get_pending_owner_verification_form()-> list[ParkingDetails]:
     """This function finds the forms whose the verification status are pending from the mongodb and return them"""
     return await ParkingDetails.find_many(ParkingDetails.verification_status == VerificationStatus.PENDING).to_list() 
     
 async def change_owner_form_verification_status(uid: str, status: VerificationStatus) -> ParkingDetails:
     """Find the parking form and update the verification status."""
+   
+    user = await User.find_one(User.uid == uid)
+    if user is not None and UserType.OWNER not in user.roles:
+        user.roles.append(UserType.OWNER)
+        await user.save()
+    
     doc = await ParkingDetails.find_one(ParkingDetails.uid == uid)
     if not doc:
         raise HTTPException(status_code=404, detail="Form not found")
     doc.verification_status = status
     await doc.save()
     logging.info(f"Changed verification status of form {uid} to {status}")
+    
+    # Along with that we need to add a role too to the user.
+    
     return doc

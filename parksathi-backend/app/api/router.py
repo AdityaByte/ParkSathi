@@ -96,7 +96,6 @@ async def handle_health():
 
 # Block end - health route mapping.
 
-
 # Block start - admin route mapping.
 
 @router.get("/admin/pending_owners", status_code=HTTPStatus.OK)
@@ -138,7 +137,7 @@ async def handle_cancel_booking(booking_id: str, token: str = Depends(verify_fir
 
 @router.post("/bookings/acquire/{booking_id}", status_code=HTTPStatus.OK)
 async def handle_acquire_booking(booking_id: str):
-    await acquire_booking(booking_id, BookingStatus.ACQUIRED)
+    return await acquire_booking(booking_id, BookingStatus.ACQUIRED)
 
 # Block end - booking routes.
 
