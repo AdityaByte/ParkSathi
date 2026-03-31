@@ -11,6 +11,7 @@ from app.api.endpoints.booking import acquire_booking, cancel_booking, create_bo
 from app.api.endpoints.admin import change_owner_form_verification_status, get_pending_owner_verification_form
 from app.api.endpoints.owner import create_owner
 from app.api.endpoints.parking import find_nearby_parking_spot
+from app.api.endpoints.payment import create_payment, make_payment
 from app.api.endpoints.user import create_user, verify_user_role
 from app.auth.firebase import get_current_user, verify_firebase_token
 from app.model.booking import BookingStatus
@@ -184,3 +185,17 @@ async def partner_socket(websocket: WebSocket, token: str):
             manager.disconnect(websocket, uid)
         
 # Block end - websocket endpoints.
+
+# Block start - payment endpoints.
+
+
+@router.post("/payment/create")
+async def handle_create_payment(booking_id: str, token: str = Depends(verify_firebase_token)):
+    return await create_payment(uid=token['uid'], booking_id=booking_id)
+    
+@router.post("/payment/make/{booking_id}")
+async def handle_make_payment(booking_id: str):
+    return await make_payment(booking_id)
+
+
+# Block end - payment endpoints.

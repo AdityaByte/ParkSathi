@@ -57,7 +57,11 @@ fun DashboardScreen(navController: NavController, context: Context) {
                 ExploreScreen()
             }
             composable(Screen.Bookings.route) {
-                BookingsScreen()
+                BookingsScreen(
+                    onNavigateToPayment = { bookingId ->
+                        navController.navigate(Screen.Payment.createRoute(bookingId))
+                    }
+                )
             }
             composable(Screen.Profile.route) {
                 ProfileScreen()

@@ -15,6 +15,11 @@ sealed class Screen(val route: String, val title: String? = null, val icon: Imag
     object Explore : Screen("explore", "Explore", Icons.Default.Map)
     object Bookings : Screen("bookings", "Bookings", Icons.Default.History)
     object Profile : Screen("profile", "Profile", Icons.Default.Person)
+
+    // Payment
+    object Payment : Screen("payment/{bookingId}") {
+        fun createRoute(bookingId: String) = "payment/$bookingId"
+    }
     
     companion object {
         val bottomNavItems = listOf(Explore, Bookings, Profile)

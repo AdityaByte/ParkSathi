@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.ConfirmationNumber
+import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -24,6 +25,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.zxing.BarcodeFormat
@@ -33,7 +35,10 @@ import `in`.parksathi.app.dto.BookingStatus
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BookingsScreen(viewModel: BookingsViewModel = viewModel()) {
+fun BookingsScreen(
+    onNavigateToPayment: (String) -> Unit,
+    viewModel: BookingsViewModel = viewModel()
+) {
     val bookings by viewModel.bookings
     val isLoading by viewModel.isLoading
     val qrBookingId by viewModel.showQrDialog
@@ -67,7 +72,8 @@ fun BookingsScreen(viewModel: BookingsViewModel = viewModel()) {
                         BookingItem(
                             booking = booking,
                             onCancel = { viewModel.cancelBooking(booking.bookingId) },
-                            onGenerateQr = { viewModel.showQr(booking.bookingId) }
+                            onGenerateQr = { viewModel.showQr(booking.bookingId) },
+                            onPay = { onNavigateToPayment(booking.bookingId) }
                         )
                     }
                 }
@@ -84,7 +90,8 @@ fun BookingsScreen(viewModel: BookingsViewModel = viewModel()) {
 fun BookingItem(
     booking: BookingResponse,
     onCancel: () -> Unit,
-    onGenerateQr: () -> Unit
+    onGenerateQr: () -> Unit,
+    onPay: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -122,7 +129,7 @@ fun BookingItem(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Divider()
+            HorizontalDivider()
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -194,6 +201,19 @@ fun BookingItem(
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("Show QR")
                     }
+                }
+            } else if (booking.bookingStatus == BookingStatus.ACQUIRED) {
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Button(
+                    onClick = onPay,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+                ) {
+                    Icon(Icons.Default.Payment, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Pay Now", fontSize = 16.sp)
                 }
             }
         }
