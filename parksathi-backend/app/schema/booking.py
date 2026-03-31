@@ -10,3 +10,11 @@ class BookingResponse(BaseModel):
     booking_status: BookingStatus
     parking_name: str
     acquired_at: datetime | None = None
+    
+class OwnerBookingResponse(BaseModel):
+    user_name: str
+    booking_id: UUID
+    booking_status: BookingStatus
+    created_at: datetime
+    acquired_at: datetime | None = None
+    completed_at: datetime | None = None

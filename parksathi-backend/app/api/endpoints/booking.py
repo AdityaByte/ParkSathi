@@ -4,13 +4,14 @@ from uuid import UUID, uuid4
 import logging
 import ast
 from datetime import datetime
-from beanie.operators import Set, Inc
+from beanie.operators import Set, Inc, In
 
 from fastapi import HTTPException
 
 from app.model.booking import Booking, BookingStatus
 from app.model.parking import ParkingDetails
-from app.schema.booking import BookingResponse
+from app.model.user import User
+from app.schema.booking import BookingResponse, OwnerBookingResponse
 
 async def acquire_booking(booking_id: str, status: BookingStatus):
     booking_id = UUID(booking_id)
@@ -98,6 +99,39 @@ async def get_bookings(uid: str) -> list[BookingResponse]:
             )
         )
     
+    return result
+    
+async def get_bookings_by_parking_id(uid: str) -> list[OwnerBookingResponse]:
+    parking_detail = await ParkingDetails.find_one(ParkingDetails.uid == uid)
+    if not parking_detail:
+        return []
+        
+    parking_id = parking_detail.parking_id
+    bookings = await Booking.find(Booking.parking_id == parking_id).to_list()
+    
+    if not bookings:
+        return []
+        
+    # Here we just have done a optimization rather of making many calls to the database we can find the users in one call
+    # and then created a lookup dictionary whose key is uid and the value is the username.
+    # As of in the previous code if the user is missing then the code will crash out abruptly but this one is optimized.
+    user_uids = list(set(b.uid for b in bookings))
+    users = await User.find(In(User.uid, user_uids)).to_list()
+    user_map = {u.uid: u.name for u in users}
+
+    result = []
+    for booking in bookings:
+        user_name = user_map.get(booking.uid, "Unknown User")
+        
+        result.append(OwnerBookingResponse(
+            user_name=user_name,
+            booking_id=booking.booking_id,
+            booking_status=booking.booking_status,
+            created_at=booking.created_at,
+            acquired_at=booking.acquired_at,
+            completed_at=booking.completed_at
+        ))
+        
     return result
     
 async def cancel_booking(booking_id: UUID, uid: str):

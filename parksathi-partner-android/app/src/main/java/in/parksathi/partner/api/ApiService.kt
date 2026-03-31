@@ -2,6 +2,7 @@ package `in`.parksathi.partner.api
 
 import `in`.parksathi.partner.dto.AcquireBookingResponse
 import `in`.parksathi.partner.dto.CreateUserResponse
+import `in`.parksathi.partner.dto.OwnerBookingResponse
 import `in`.parksathi.partner.dto.ParkingResponse
 import `in`.parksathi.partner.dto.VerifyRoleResponse
 import okhttp3.MultipartBody
@@ -26,6 +27,11 @@ interface ApiService {
         @Path("booking_id") bookingId: String,
         @Header("Authorization") token: String
     ): Response<AcquireBookingResponse>
+
+    @GET("bookings/owner")
+    suspend fun getOwnerBookings(
+        @Header("Authorization") token: String
+    ): Response<List<OwnerBookingResponse>>
 
     @Multipart
     @POST("owner/create")

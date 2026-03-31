@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Response, UploadFile, WebSocket
 from fastapi.params import Form
 from firebase_admin.auth import UidIdentifier
 
-from app.api.endpoints.booking import acquire_booking, cancel_booking, create_booking, get_bookings
+from app.api.endpoints.booking import acquire_booking, cancel_booking, create_booking, get_bookings, get_bookings_by_parking_id
 from app.api.endpoints.admin import change_owner_form_verification_status, get_pending_owner_verification_form
 from app.api.endpoints.owner import create_owner
 from app.api.endpoints.parking import find_nearby_parking_spot
@@ -138,6 +138,10 @@ async def handle_cancel_booking(booking_id: str, token: str = Depends(verify_fir
 @router.post("/bookings/acquire/{booking_id}", status_code=HTTPStatus.OK)
 async def handle_acquire_booking(booking_id: str):
     return await acquire_booking(booking_id, BookingStatus.ACQUIRED)
+    
+@router.get("/bookings/owner")
+async def handle_get_bookings_of_owner(token: str = Depends(verify_firebase_token)):
+    return await get_bookings_by_parking_id(uid=token['uid'])
 
 # Block end - booking routes.
 
