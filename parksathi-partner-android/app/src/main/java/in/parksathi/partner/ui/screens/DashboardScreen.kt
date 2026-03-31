@@ -56,7 +56,7 @@ fun DashboardScreen(navController: NavController, context: Context) {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Home.route) {
-                HomeScreen()
+                HomeScreen(navController)
             }
 
             composable(Screen.Booking.route) {

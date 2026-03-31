@@ -1,5 +1,11 @@
 package `in`.parksathi.partner.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -7,23 +13,38 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import `in`.parksathi.partner.ui.navigation.Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
+fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewModel()) {
     val uiState by viewModel.uiState
     val slots by viewModel.slots
-    var showScanner by remember { mutableStateOf(false) }
+    val isAcquiring by viewModel.isAcquiring
+    val context = LocalContext.current
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            navController.navigate(Screen.Scanner.route)
+        } else {
+            Toast.makeText(context, "Camera permission is required to scan QR", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.startWebSocket()
@@ -40,10 +61,15 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                     ) 
                 },
                 actions = {
-                    IconButton(onClick = { showScanner = true }) {
-                        // Using a standard icon as QrCodeScanner requires extended icons dependency
+                    IconButton(onClick = { 
+                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                            navController.navigate(Screen.Scanner.route)
+                        } else {
+                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                        }
+                    }) {
                         Icon(
-                            imageVector = Icons.Default.Add, 
+                            imageVector = Icons.Default.Place,
                             contentDescription = "Scan QR"
                         )
                     }
@@ -135,27 +161,12 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                 }
             }
 
-            if (showScanner) {
-                // Dummy Scanner Overlay
+            if (isAcquiring) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.8f)),
+                    modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Scanner Active", color = Color.White, fontSize = 20.sp)
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Box(
-                            modifier = Modifier
-                                .size(250.dp)
-                                .border(2.dp, Color.Green, RoundedCornerShape(12.dp))
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Button(onClick = { showScanner = false }) {
-                            Text("Close Scanner")
-                        }
-                    }
+                    CircularProgressIndicator()
                 }
             }
         }

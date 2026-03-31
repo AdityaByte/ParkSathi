@@ -4,8 +4,7 @@ from uuid import UUID, uuid4
 import logging
 import ast
 from datetime import datetime
-from beanie.operators import Set
-
+from beanie.operators import Set, Inc
 
 from fastapi import HTTPException
 
@@ -13,7 +12,26 @@ from app.model.booking import Booking, BookingStatus
 from app.model.parking import ParkingDetails
 from app.schema.booking import BookingResponse
 
-async def acquire_booking(uid: str, parking_id: str) -> BookingResponse:
+async def acquire_booking(booking_id: str, status: BookingStatus):
+    booking_id = UUID(booking_id)
+    booking = await Booking.find_one(Booking.booking_id == booking_id)
+    
+    if booking.booking_status == BookingStatus.ACQUIRED:
+        return {"message": "This booking is already acquired."}
+    
+    booking.booking_status = status
+    booking.acquired_at = datetime.now()
+    
+    result = await ParkingDetails.find_one(
+        ParkingDetails.parking_id == booking.parking_id
+    )
+    
+    if result is None:
+        raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="Failed to save the updated parking details document.")
+        
+    await booking.save()
+
+async def create_booking(uid: str, parking_id: str) -> BookingResponse:
     # firstly we need to clean the parking_id.
     # Since the parking_id is the string representation of bytes we need to firstly convert it to bytes then we need to pass those bytes to the UUID function.
     parking_id_bytes = ast.literal_eval(parking_id)
@@ -36,6 +54,11 @@ async def acquire_booking(uid: str, parking_id: str) -> BookingResponse:
         parking_id=parking_details.parking_id,
         parking_details=parking_details # linking is automatically handled by beanie.
     ).insert()
+    
+    # Now we need to update the parking details booking status
+    # We don't need to check for the booking slots fullness as of we filtered and showed only those parking locations
+    # whose have some empty slots so we just need to update here.
+    parking_details.booked_slots += 1
     
     # Now we just need to save the document.
     return BookingResponse(
@@ -81,3 +104,10 @@ async def cancel_booking(booking_id: UUID, uid: str):
 
     if result is None:
         raise HTTPException(status_code=404, detail="Booking not found")
+        
+    parking_result = await ParkingDetails.find_one(ParkingDetails.parking_id == result.parking_id).update(
+        Set({ParkingDetails.booked_slots: ParkingDetails.booked_slots - 1})
+    )
+    
+    if parking_result is None:
+        raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="Failed to save the parking result while cancelling the booking.")

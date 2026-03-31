@@ -13,3 +13,7 @@ data class ParkingResponse(
 data class CreateUserResponse(
     @SerializedName("message") val message: String
 )
+
+data class AcquireBookingResponse(
+    @SerializedName("message") val message: String
+)

@@ -11,6 +11,7 @@ sealed class Screen(val route: String, val title: String? = null, val icon: Imag
     object ParkingDetails : Screen("parking_details")
     object Dashboard : Screen("dashboard")
     object PendingVerification : Screen("pending_verification")
+    object Scanner : Screen("scanner")
 
     object Home: Screen("home", "Home", Icons.Default.Home)
 

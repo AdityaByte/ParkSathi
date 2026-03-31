@@ -1,5 +1,6 @@
 package `in`.parksathi.partner.api
 
+import `in`.parksathi.partner.dto.AcquireBookingResponse
 import `in`.parksathi.partner.dto.CreateUserResponse
 import `in`.parksathi.partner.dto.ParkingResponse
 import `in`.parksathi.partner.dto.VerifyRoleResponse
@@ -19,6 +20,12 @@ interface ApiService {
     suspend fun verifyRole(
         @Header("Authorization") token: String
     ): Response<VerifyRoleResponse>
+
+    @POST("bookings/acquire/{booking_id}")
+    suspend fun acquireBooking(
+        @Path("booking_id") bookingId: String,
+        @Header("Authorization") token: String
+    ): Response<AcquireBookingResponse>
 
     @Multipart
     @POST("owner/create")

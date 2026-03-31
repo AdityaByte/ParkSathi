@@ -9,6 +9,7 @@ import `in`.parksathi.partner.ui.screens.DashboardScreen
 import `in`.parksathi.partner.ui.screens.LoginScreen
 import `in`.parksathi.partner.ui.screens.ParkingDetailsScreen
 import `in`.parksathi.partner.ui.screens.PendingVerificationScreen
+import `in`.parksathi.partner.ui.screens.ScannerScreen
 import `in`.parksathi.partner.ui.screens.SplashScreen
 
 @Composable
@@ -38,6 +39,10 @@ fun AppNavigation(context: Context) {
 
         composable(Screen.Dashboard.route) {
             DashboardScreen(navController, context)
+        }
+
+        composable(Screen.Scanner.route) {
+            ScannerScreen(navController)
         }
     }
 }

@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.gson.Gson
 import `in`.parksathi.partner.BuildConfig
+import `in`.parksathi.partner.config.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -30,6 +31,9 @@ class HomeViewModel : ViewModel() {
 
     private val _slots = mutableStateOf<List<Slot>>(emptyList())
     val slots: State<List<Slot>> = _slots
+
+    private val _isAcquiring = mutableStateOf(false)
+    val isAcquiring: State<Boolean> = _isAcquiring
 
     private var webSocket: WebSocket? = null
     private val client = OkHttpClient.Builder()
@@ -60,7 +64,7 @@ class HomeViewModel : ViewModel() {
                 
                 val baseUrl = BuildConfig.BACKEND_ORIGIN.replace("http", "ws")
                 val request = Request.Builder()
-                    .url(baseUrl+ "ws/partner?token=$token")
+                    .url(baseUrl + "ws/partner?token=$token")
                     .build()
 
                 webSocket = client.newWebSocket(request, object : WebSocketListener() {
@@ -84,6 +88,33 @@ class HomeViewModel : ViewModel() {
                 })
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Error starting WebSocket", e)
+            }
+        }
+    }
+
+    fun acquireBooking(bookingId: String, onComplete: (Boolean, String?) -> Unit) {
+        /**
+         * This function will trigger an asynchronous api call to the backend for making the booking slot status
+         * as to be acquired.
+         */
+        viewModelScope.launch {
+            _isAcquiring.value = true
+            try {
+                val user = FirebaseAuth.getInstance().currentUser
+                val token = user?.getIdToken(true)?.await()?.token ?: return@launch
+                
+                val response = RetrofitClient.instance.acquireBooking(bookingId, "Bearer $token")
+                if (response.isSuccessful) {
+                    onComplete(true, response.body()?.message)
+                } else {
+                    Log.e("HomeViewModel", "Acquire failed: ${response.code()}")
+                    onComplete(false, response.body()?.message)
+                }
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Acquire error: ${e.message}")
+                onComplete(false, e.message)
+            } finally {
+                _isAcquiring.value = false
             }
         }
     }
