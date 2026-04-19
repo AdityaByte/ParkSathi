@@ -86,7 +86,14 @@ async def get_bookings(uid: str) -> list[BookingResponse]:
     result: list = []
     
     for booking in bookings:
-        parking = await booking.parking_details.fetch()
+        print(booking.parking_id)
+        # parking = await booking.parking_details.fetch()
+        parking = await ParkingDetails.find_one(ParkingDetails.parking_id == booking.parking_id)
+        print(parking)
+        
+        current_parking_name = "Unknown Parking"
+        if parking:
+            current_parking_name = parking.parking_name or ""
         
         result.append(
             BookingResponse(
@@ -95,7 +102,7 @@ async def get_bookings(uid: str) -> list[BookingResponse]:
                 parking_id=booking.parking_id,
                 booking_status=booking.booking_status,
                 acquired_at=booking.acquired_at,
-                parking_name=parking.parking_name or "" # Result out to be null then empty string is to returned.
+                parking_name=current_parking_name # Result out to be null then empty string is to returned.
             )
         )
     
