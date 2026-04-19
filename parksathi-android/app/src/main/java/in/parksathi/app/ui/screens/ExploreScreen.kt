@@ -2,6 +2,7 @@ package `in`.parksathi.app.ui.screens
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -44,6 +46,7 @@ import java.util.Locale
 fun ExploreScreen(viewModel: ExploreViewModel = viewModel()) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     
     var hasLocationPermission by remember {
         mutableStateOf(
@@ -61,15 +64,30 @@ fun ExploreScreen(viewModel: ExploreViewModel = viewModel()) {
         }
     )
 
+    val defaultLocation = LatLng(28.6139, 77.2090) // Delhi
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(defaultLocation, 12f)
+    }
+
     LaunchedEffect(Unit) {
         if (!hasLocationPermission) {
             launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
     }
 
-    val defaultLocation = LatLng(28.6139, 77.2090) // Delhi
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(defaultLocation, 12f)
+    LaunchedEffect(hasLocationPermission) {
+        if (hasLocationPermission) {
+            try {
+                val location = fusedLocationClient.lastLocation.await()
+                if (location != null) {
+                    val currentLatLng = LatLng(location.latitude, location.longitude)
+                    cameraPositionState.position = CameraPosition.fromLatLngZoom(currentLatLng, 15f)
+                    viewModel.fetchNearbyParking(location.latitude, location.longitude)
+                }
+            } catch (e: Exception) {
+                Log.e("ExploreScreen", "Location fetch error, $e")
+            }
+        }
     }
 
     val parkingSpots by viewModel.nearbyParkingSpots
@@ -176,8 +194,6 @@ fun ExploreScreen(viewModel: ExploreViewModel = viewModel()) {
             selectedSpot?.let { spot ->
                 ParkingDetailCard(spot = spot, onBookNow = {
                     scope.launch {
-                        // Logic for booking goes here.
-                        // Here we need to make a backend call for making the book ready and in the booking screen we will fetch out the booking details.
                         val user = FirebaseAuth.getInstance().currentUser
                         val tokenResult = user?.getIdToken(true)?.await()
                         val idToken = tokenResult?.token
