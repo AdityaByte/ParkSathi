@@ -9,7 +9,8 @@ from app.model.user import User
 from app.schema.payment import PaymentResponse
 from uuid import UUID
 
-PAYMENT_AMOUNT_PER_MINUTE: float = 10.0 # In ruppees. Just for as a dummy amount.
+# Now we are moved from this static thing to dynamic - (as of i have used this for simplicity.)
+# PAYMENT_AMOUNT_PER_MINUTE: float = 10.0 # In ruppees. Just for as a dummy amount.
 
 payment_map: dict[str, PaymentResponse] = {}
 
@@ -31,9 +32,10 @@ async def create_payment(uid: str, booking_id: str) -> PaymentResponse:
     
     time_difference = datetime.now() - acquired_time
     time_difference_in_minutes = time_difference.total_seconds() / 60
-    amount = round(time_difference_in_minutes * PAYMENT_AMOUNT_PER_MINUTE)
     
     parking_details = await ParkingDetails.find_one(ParkingDetails.parking_id == booking.parking_id)
+    
+    amount = round(time_difference_in_minutes * (parking_details.hourly_rate / 60.0))
     
     user_details = await User.find_one(User.uid == parking_details.uid)
     

@@ -18,3 +18,4 @@ class NearbyParkingSpot(BaseModel):
     available_slots: int
     verification_status: VerificationStatus
     distance: float
+    hourly_rate: float

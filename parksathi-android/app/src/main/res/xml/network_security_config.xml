@@ -1,8 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">192.168.29.146</domain>
-        <domain includeSubdomains="true">localhost</domain>
-        <domain includeSubdomains="true">10.0.2.2</domain> <!-- Android Emulator Loopback -->
-    </domain-config>
+    <!--    For production keep this as of allowing only specific ips.-->
+    <!--    <domain-config cleartextTrafficPermitted="true">-->
+    <!--        <domain includeSubdomains="true">192.168.29.146</domain>-->
+    <!--        <domain includeSubdomains="true">localhost</domain>-->
+    <!--        <domain includeSubdomains="true">10.0.2.2</domain>-->
+    <!--    </domain-config>-->
+
+    <!--    Allowing all ips for development phase.-->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
 </network-security-config>

@@ -23,5 +23,6 @@ data class NearbyParkingSpot(
     @SerializedName("slots") val slots: Int,
     @SerializedName("available_slots") val availableSlots: Int,
     @SerializedName("verification_status") val verificationStatus: VerificationStatus,
-    @SerializedName("distance") val distance: Double
+    @SerializedName("distance") val distance: Double,
+    @SerializedName("hourly_rate") val hourly_rate: Double
 )

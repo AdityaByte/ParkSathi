@@ -42,8 +42,9 @@ async def find_nearby_parking_spot(lat: float, lng: float) -> list[NearbyParking
                 lng=spot["coordinates"]["coordinates"][0]
             ),
             slots=spot["slots"],
-            available_slots=spot["slots"],
+            available_slots=(spot["slots"] - (spot['booked_slots'] + spot['acquired_slots'])),
             verification_status=spot["verification_status"],
-            distance=round(spot["calculated_distance"] / 1000, 2)
+            distance=round(spot["calculated_distance"] / 1000, 2),
+            hourly_rate=spot['hourly_rate']
         ) for spot in results
     ] 

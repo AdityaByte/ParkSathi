@@ -21,7 +21,8 @@ async def create_owner(
         id_proof: str,
         slots: int,
         file: UploadFile,
-        current_user: User
+        current_user: User,
+        hourly_rate: float
 ):
     
     _, file_extension = os.path.splitext(file.filename)
@@ -50,7 +51,8 @@ async def create_owner(
         coordinates=Coordinates(type="Point", coordinates=[lng, lat]),
         verification_file_url=file_path,
         verification_status=VerificationStatus.PENDING,
-        slots=slots
+        slots=slots,
+        hourly_rate=hourly_rate
     )
 
     await new_parking.insert()

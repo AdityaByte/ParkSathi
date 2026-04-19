@@ -68,6 +68,7 @@ async def handle_create_owner(
     id_proof: str = Form(...),
     file: UploadFile = Form(...),
     current_user: User = Depends(get_current_user),
+    hourly_rate: float = Form(...)
 ):
     """This function initially creates the owner as temporary, and thereafter permanent validation,
     we will change the parking owner status as approved."""
@@ -81,6 +82,7 @@ async def handle_create_owner(
         slots,
         file,
         current_user,
+        hourly_rate
     )
 
 

@@ -47,7 +47,18 @@ class ExploreViewModel : ViewModel() {
         DummyPrediction("4", "Little Flower School", "Civil Lines, Betul", "Little Flower Higher Secondary School, Betul", LatLng(21.9085, 77.9125)),
         DummyPrediction("5", "Collectorate Office", "Civil Lines, Betul", "District Collectorate, Betul, Madhya Pradesh", LatLng(21.9068, 77.9092)),
         DummyPrediction("6", "Betul Ganj Post Office", "Ganj, Betul", "Head Post Office, Ganj, Betul", LatLng(21.9192, 77.9110)),
-        DummyPrediction("7", "Kothi Bazaar", "Betul Town", "Kothi Bazaar area, Betul, Madhya Pradesh", LatLng(21.9155, 77.9180))
+        DummyPrediction("7", "Kothi Bazaar", "Betul Town", "Kothi Bazaar area, Betul, Madhya Pradesh", LatLng(21.9155, 77.9180)),
+        // Added more locations across bhopal.
+        DummyPrediction("8", "Patel Nagar", "Raisen Road", "Patel Nagar, Bhopal, Madhya Pradesh", LatLng(23.2435, 77.4872)),
+        DummyPrediction("9", "Anand Nagar", "BHEL Township", "Anand Nagar, Bhopal, Madhya Pradesh", LatLng(23.2505, 77.4985)),
+        DummyPrediction("10", "Piplani", "BHEL", "Piplani, BHEL, Bhopal, Madhya Pradesh", LatLng(23.2450, 77.4690)),
+        DummyPrediction("11", "MP Nagar", "Zone 1 & 2", "Maharana Pratap Nagar, Bhopal, Madhya Pradesh", LatLng(23.2325, 77.4300)),
+        DummyPrediction("12", "Ashoka Garden", "80 Feet Road", "Ashoka Garden, Bhopal, Madhya Pradesh", LatLng(23.2620, 77.4355)),
+        DummyPrediction("13", "Arera Hills", "Government Square", "Arera Hills, Bhopal, Madhya Pradesh", LatLng(23.2365, 77.4200)),
+        DummyPrediction("14", "Bitton Market", "Arera Colony", "Bitton Market, E-5, Arera Colony, Bhopal", LatLng(23.2140, 77.4290)),
+        DummyPrediction("15", "Upper Lake", "VIP Road", "Bhojtal/Upper Lake View Point, Bhopal", LatLng(23.2480, 77.3820)),
+        DummyPrediction("16", "New Market", "TT Nagar", "New Market Commercial Area, Bhopal", LatLng(23.2415, 77.4045)),
+        DummyPrediction("17", "Habibganj (RKMP)", "Hoshangabad Road", "Rani Kamalapati Railway Station, Bhopal", LatLng(23.2205, 77.4390))
     )
 
     fun fetchNearbyParking(lat: Double, lng: Double) {
@@ -59,6 +70,8 @@ class ExploreViewModel : ViewModel() {
                 if (response.isSuccessful) {
                     val spots = response.body() ?: emptyList()
                     _nearbyParkingSpots.value = spots
+
+                    Log.d("ExploreViewModel", "nearly parking spot value: $spots")
                     
                     // Auto-select if only one spot is found
                     if (spots.size == 1) {

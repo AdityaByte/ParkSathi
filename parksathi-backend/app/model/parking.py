@@ -35,6 +35,7 @@ class ParkingDetails(Document):
     booked_slots: int = 0
     acquired_slots: int = 0
     total_income: float = 0.0
+    hourly_rate: float = 0.0 # The owner will decide like how much he has to pay for minutes or for hours likewise we are currently concluding at 1 hour.
 
     class Settings:
         name = "parking_details"

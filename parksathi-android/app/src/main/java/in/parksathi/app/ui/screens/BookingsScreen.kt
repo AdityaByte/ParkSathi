@@ -113,7 +113,7 @@ fun BookingItem(
                 Column {
                     Text(
                         text = booking.parkingName,
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(2.dp))

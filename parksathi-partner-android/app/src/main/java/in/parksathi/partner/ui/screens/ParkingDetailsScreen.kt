@@ -6,8 +6,6 @@ import android.content.Context
 import android.location.Geocoder
 import android.net.Uri
 import android.os.Build
-import android.provider.OpenableColumns
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,6 +20,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -31,57 +30,42 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.firebase.auth.FirebaseAuth
 import com.google.maps.android.compose.*
-import `in`.parksathi.partner.config.RetrofitClient
 import `in`.parksathi.partner.ui.navigation.Screen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
-import java.io.File
-import java.io.FileOutputStream
-import java.io.InputStream
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ParkingDetailsScreen(navController: NavController) {
+fun ParkingDetailsScreen(
+    navController: NavController,
+    viewModel: ParkingDetailsViewModel = viewModel()
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val sharedPreferences = context.getSharedPreferences("parksathi_prefs", Context.MODE_PRIVATE)
 
-    var parkingName by remember { mutableStateOf("") }
-    var address by remember { mutableStateOf("") }
-    var phoneNumber by remember { mutableStateOf("") }
-    var twoWheelerSlots by remember { mutableStateOf("") }
-    var idProof by remember { mutableStateOf("") }
-    var licenseUri by remember { mutableStateOf<Uri?>(null) }
-    
-    var isLoading by remember { mutableStateOf(false) }
-
-    // Coordinates
-    var latitude by remember { mutableDoubleStateOf(0.0) }
-    var longitude by remember { mutableDoubleStateOf(0.0) }
-    
     var showMapDialog by remember { mutableStateOf(false) }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? -> licenseUri = uri }
+    ) { uri: Uri? ->
+        viewModel.onFileSelected(context, uri)
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -95,12 +79,21 @@ fun ParkingDetailsScreen(navController: NavController) {
         }
     }
 
-    val isFormValid = parkingName.isNotBlank() && 
-                      address.isNotBlank() && 
-                      phoneNumber.isNotBlank() && 
-                      twoWheelerSlots.isNotBlank() &&
-                      licenseUri != null &&
-                      latitude != 0.0
+    LaunchedEffect(viewModel.isSuccess) {
+        if (viewModel.isSuccess) {
+            sharedPreferences.edit().putBoolean("isParkingFormSubmitted", true).apply()
+            Toast.makeText(context, "Registration Successful!", Toast.LENGTH_SHORT).show()
+            navController.navigate(Screen.PendingVerification.route) {
+                popUpTo(Screen.ParkingDetails.route) { inclusive = true }
+            }
+        }
+    }
+
+    LaunchedEffect(viewModel.errorMessage) {
+        viewModel.errorMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -138,16 +131,16 @@ fun ParkingDetailsScreen(navController: NavController) {
                     ) {
 
                         OutlinedTextField(
-                            value = parkingName,
-                            onValueChange = { parkingName = it },
+                            value = viewModel.parkingName,
+                            onValueChange = { viewModel.parkingName = it },
                             label = { Text("Parking Name") },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
                         )
 
                         OutlinedTextField(
-                            value = address,
-                            onValueChange = { address = it },
+                            value = viewModel.address,
+                            onValueChange = { viewModel.address = it },
                             label = { Text("Address") },
                             modifier = Modifier.fillMaxWidth(),
                             minLines = 2,
@@ -166,9 +159,9 @@ fun ParkingDetailsScreen(navController: NavController) {
                             }
                         )
                         
-                        if (latitude != 0.0) {
+                        if (viewModel.latitude != 0.0) {
                             Text(
-                                text = "Selected Location: ${String.format("%.4f", latitude)}, ${String.format("%.4f", longitude)}",
+                                text = "Selected Location: ${String.format("%.4f", viewModel.latitude)}, ${String.format("%.4f", viewModel.longitude)}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(start = 4.dp)
@@ -176,27 +169,39 @@ fun ParkingDetailsScreen(navController: NavController) {
                         }
 
                         OutlinedTextField(
-                            value = phoneNumber,
-                            onValueChange = { phoneNumber = it },
+                            value = viewModel.phoneNumber,
+                            onValueChange = { viewModel.phoneNumber = it },
                             label = { Text("Phone Number") },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
                         )
 
-                        OutlinedTextField(
-                            value = twoWheelerSlots,
-                            onValueChange = { if (it.all { char -> char.isDigit() }) twoWheelerSlots = it },
-                            label = { Text("Available 2-Wheeler Slots") },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            placeholder = { Text("e.g. 50") }
-                        )
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            OutlinedTextField(
+                                value = viewModel.slots,
+                                onValueChange = { if (it.all { char -> char.isDigit() }) viewModel.slots = it },
+                                label = { Text("Slots") },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                placeholder = { Text("e.g. 50") }
+                            )
+
+                            OutlinedTextField(
+                                value = viewModel.hourlyRate,
+                                onValueChange = { if (it.all { char -> char.isDigit() }) viewModel.hourlyRate = it },
+                                label = { Text("₹ / Hour") },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                placeholder = { Text("e.g. 20") }
+                            )
+                        }
 
                         OutlinedTextField(
-                            value = idProof,
-                            onValueChange = { idProof = it },
+                            value = viewModel.idProof,
+                            onValueChange = { viewModel.idProof = it },
                             label = { Text("ID Proof Name (e.g. Aadhaar)") },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
@@ -204,7 +209,32 @@ fun ParkingDetailsScreen(navController: NavController) {
                     }
                 }
 
-                Text("Verification File", style = MaterialTheme.typography.titleMedium)
+                Text("Verification Documents", style = MaterialTheme.typography.titleMedium)
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Documents Required:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("• Rented: Rental/Lease agreement", fontSize = 12.sp)
+                        Text("• Own Property: Home bill/Registry paper", fontSize = 12.sp)
+                        Text("• Mandatory: Photos of the parking space", fontSize = 12.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Pro-tip: For faster verification, combine all documents and photos into a single PDF file.",
+                            fontSize = 12.sp,
+                            fontStyle = FontStyle.Italic,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
 
                 ElevatedCard(
                     modifier = Modifier
@@ -222,28 +252,28 @@ fun ParkingDetailsScreen(navController: NavController) {
                     ) {
 
                         Icon(
-                            imageVector = if (licenseUri != null) Icons.Default.CheckCircle else Icons.Default.Add,
+                            imageVector = if (viewModel.verificationUri != null) Icons.Default.CheckCircle else Icons.Default.Add,
                             contentDescription = null,
-                            tint = if (licenseUri != null) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = if (viewModel.verificationUri != null) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
                         Column {
                             Text(
-                                text = if (licenseUri != null) "File Uploaded" else "Upload Verification File",
+                                text = if (viewModel.verificationUri != null) "File Uploaded" else "Upload Verification File",
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "ID Proof document or License (Image/PDF)",
+                                text = "PDF preferred containing all proof & photos",
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
                     }
                 }
 
-                licenseUri?.let {
+                viewModel.verificationFileName?.let {
                     Text(
-                        text = "Selected: ${getFileName(context, it)}",
+                        text = "Selected: $it",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -253,38 +283,15 @@ fun ParkingDetailsScreen(navController: NavController) {
 
                 Button(
                     onClick = {
-                        scope.launch {
-                            isLoading = true
-                            val success = submitParkingDetails(
-                                context = context,
-                                parkingName = parkingName,
-                                address = address,
-                                phoneNumber = phoneNumber,
-                                slots = twoWheelerSlots,
-                                idProof = idProof,
-                                lat = latitude,
-                                lng = longitude,
-                                fileUri = licenseUri!!
-                            )
-                            isLoading = false
-                            if (success) {
-                                sharedPreferences.edit().putBoolean("isParkingFormSubmitted", true).apply()
-                                Toast.makeText(context, "Registration Successful!", Toast.LENGTH_SHORT).show()
-                                navController.navigate(Screen.PendingVerification.route) {
-                                    popUpTo(Screen.ParkingDetails.route) { inclusive = true }
-                                }
-                            } else {
-                                Toast.makeText(context, "Registration Failed. Try again.", Toast.LENGTH_SHORT).show()
-                            }
-                        }
+                        viewModel.submitDetails(context)
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    enabled = isFormValid && !isLoading,
+                    enabled = viewModel.isFormValid && !viewModel.isLoading,
                     shape = RoundedCornerShape(14.dp)
                 ) {
-                    if (isLoading) {
+                    if (viewModel.isLoading) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
                     } else {
                         Text("Submit Parking Details")
@@ -298,107 +305,15 @@ fun ParkingDetailsScreen(navController: NavController) {
         LocationPickerDialog(
             onDismiss = { showMapDialog = false },
             onLocationSelected = { latLng, fetchedAddress ->
-                latitude = latLng.latitude
-                longitude = latLng.longitude
+                viewModel.latitude = latLng.latitude
+                viewModel.longitude = latLng.longitude
                 if (fetchedAddress.isNotBlank()) {
-                    address = fetchedAddress
+                    viewModel.address = fetchedAddress
                 }
                 showMapDialog = false
             }
         )
     }
-}
-
-private suspend fun submitParkingDetails(
-    context: Context,
-    parkingName: String,
-    address: String,
-    phoneNumber: String,
-    slots: String,
-    idProof: String,
-    lat: Double,
-    lng: Double,
-    fileUri: Uri
-): Boolean {
-    return withContext(Dispatchers.IO) {
-        try {
-            val user = FirebaseAuth.getInstance().currentUser
-            val token = user?.getIdToken(true)?.await()?.token ?: return@withContext false
-            val authHeader = "Bearer $token"
-
-            val parkingNamePart = parkingName.toRequestBody("text/plain".toMediaTypeOrNull())
-            val addressPart = address.toRequestBody("text/plain".toMediaTypeOrNull())
-            val phonePart = phoneNumber.toRequestBody("text/plain".toMediaTypeOrNull())
-            val idProofPart = idProof.toRequestBody("text/plain".toMediaTypeOrNull())
-            val slotsPart = slots.toRequestBody("text/plain".toMediaTypeOrNull())
-            val latPart = lat.toString().toRequestBody("text/plain".toMediaTypeOrNull())
-            val lngPart = lng.toString().toRequestBody("text/plain".toMediaTypeOrNull())
-
-            val file = getFileFromUri(context, fileUri) ?: return@withContext false
-            val requestFile = file.asRequestBody(context.contentResolver.getType(fileUri)?.toMediaTypeOrNull())
-            val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
-
-            val response = RetrofitClient.instance.submitParkingDetails(
-                parkingNamePart,
-                addressPart,
-                phonePart,
-                idProofPart,
-                slotsPart,
-                latPart,
-                lngPart,
-                body,
-                authHeader
-            )
-
-            if (response.isSuccessful) {
-                Log.d("ParkingDetails", "Submission successful")
-                true
-            } else {
-                Log.e("ParkingDetails", "Submission failed: ${response.errorBody()?.string()}")
-                false
-            }
-        } catch (e: Exception) {
-            Log.e("ParkingDetails", "Error submitting: ${e.message}", e)
-            false
-        }
-    }
-}
-
-private fun getFileFromUri(context: Context, uri: Uri): File? {
-    val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
-    val fileName = getFileName(context, uri) ?: "temp_file"
-    val tempFile = File(context.cacheDir, fileName)
-    try {
-        inputStream?.use { input ->
-            FileOutputStream(tempFile).use { output ->
-                input.copyTo(output)
-            }
-        }
-        return tempFile
-    } catch (e: Exception) {
-        return null
-    }
-}
-
-@SuppressLint("Range")
-private fun getFileName(context: Context, uri: Uri): String? {
-    var result: String? = null
-    if (uri.scheme == "content") {
-        val cursor = context.contentResolver.query(uri, null, null, null, null)
-        cursor?.use {
-            if (it.moveToFirst()) {
-                result = it.getString(it.getColumnIndex(OpenableColumns.DISPLAY_NAME))
-            }
-        }
-    }
-    if (result == null) {
-        result = uri.path
-        val cut = result?.lastIndexOf('/') ?: -1
-        if (cut != -1) {
-            result = result?.substring(cut + 1)
-        }
-    }
-    return result
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -293,17 +293,35 @@ fun ParkingDetailCard(spot: NearbyParkingSpot, onBookNow: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text(
-                        text = "Available Slots",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = "${spot.availableSlots} / ${spot.slots}",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = if (spot.availableSlots > 5) Color(0xFF2E7D32) else Color.Red,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column {
+                            Text(
+                                text = "Available Slots",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.Gray
+                            )
+                            Text(
+                                text = "${spot.availableSlots} / ${spot.slots}",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = if (spot.availableSlots > 5) Color(0xFF2E7D32) else Color.Red,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(24.dp))
+                        Column {
+                            Text(
+                                text = "Hourly Rate",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.Gray
+                            )
+                            Text(
+                                text = "₹${spot.hourly_rate}/hr",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
                 
                 Button(

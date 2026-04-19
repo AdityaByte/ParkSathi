@@ -95,7 +95,7 @@ async def get_bookings(uid: str) -> list[BookingResponse]:
                 parking_id=booking.parking_id,
                 booking_status=booking.booking_status,
                 acquired_at=booking.acquired_at,
-                parking_name=parking.parking_name
+                parking_name=parking.parking_name or "" # Result out to be null then empty string is to returned.
             )
         )
     

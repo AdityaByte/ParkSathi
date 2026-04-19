@@ -41,6 +41,7 @@ interface ApiService {
         @Part("phone_number") phoneNumber: RequestBody,
         @Part("id_proof") idProof: RequestBody,
         @Part("slots") slots: RequestBody,
+        @Part("hourly_rate") hourlyRate: RequestBody,
         @Part("lat") lat: RequestBody,
         @Part("lng") lng: RequestBody,
         @Part file: MultipartBody.Part,
