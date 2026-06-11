@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -39,6 +40,12 @@ fun BookingsScreen(
     onNavigateToPayment: (String) -> Unit,
     viewModel: BookingsViewModel = viewModel()
 ) {
+
+    // When the screen loads up we need to refresh the booking data.
+    LaunchedEffect(Unit) {
+        viewModel.fetchBookings()
+    }
+
     val bookings by viewModel.bookings
     val isLoading by viewModel.isLoading
     val qrBookingId by viewModel.showQrDialog
